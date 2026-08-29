@@ -1,0 +1,29 @@
+{
+  "name": "opencode-dir-tree",
+  "version": "0.1.0",
+  "description": "OpenCode TUI plugin: VSCode-style file tree in the sidebar with click/collapse and Ctrl+click to open files with the system default editor",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/tui.js",
+      "types": "./dist/tui.d.ts"
+    },
+    "./tui": {
+      "import": "./dist/tui.js",
+      "types": "./dist/tui.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun run scripts/build.mjs && tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.18.25",
+    "@opentui/core": "^0.1.105",
+    "@opentui/solid": "^0.1.105",
+    "solid-js": "^1.9.11"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2"
+  }
+}
