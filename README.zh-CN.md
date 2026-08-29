@@ -25,7 +25,15 @@
 
 这是一个 **TUI 插件**，必须配置在 `~/.config/opencode/tui.json`，而不是 `opencode.json`。
 
-### 1. 构建插件
+### 方式一：npm 安装
+
+```bash
+npm install -g opencode-dir-tree
+```
+
+然后按包名注册（见第 2 步）——无需自行构建。
+
+### 方式二：源码构建
 
 ```bash
 git clone <本仓库>
@@ -38,7 +46,18 @@ bun run build
 
 ### 2. 注册到 OpenCode
 
-将构建产物（绝对路径）加入 `~/.config/opencode/tui.json`：
+npm 安装写包名；源码构建写 `dist/tui.js` 的绝对路径。加入 `~/.config/opencode/tui.json`：
+
+```json
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": [
+    "opencode-dir-tree"
+  ]
+}
+```
+
+或源码构建方式：
 
 ```json
 {
@@ -95,3 +114,7 @@ bun run typecheck  # tsc --noEmit
 - `src/tree.ts` — 树模型：懒加载、展开状态、git 状态映射、行扁平化
 - `src/components/dir-tree-panel.tsx` — 面板渲染与鼠标交互
 - `src/open-file.ts` — 跨平台"用系统默认程序打开"
+
+## 许可证
+
+[MIT](LICENSE)

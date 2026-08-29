@@ -25,7 +25,15 @@ An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tre
 
 This is a **TUI plugin**, so it must be configured in `~/.config/opencode/tui.json`, not in `opencode.json`.
 
-### 1. Build the plugin
+### Option A: from npm
+
+```bash
+npm install -g opencode-dir-tree
+```
+
+Then reference the package name (see step 2) — no build needed.
+
+### Option B: build from source
 
 ```bash
 git clone <this-repo>
@@ -38,7 +46,18 @@ That produces `dist/tui.js`.
 
 ### 2. Register it in OpenCode
 
-Add the built file (absolute path) to `~/.config/opencode/tui.json`:
+npm installs go by package name; source builds use the absolute path to `dist/tui.js`. Add it to `~/.config/opencode/tui.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": [
+    "opencode-dir-tree"
+  ]
+}
+```
+
+or, for a source build:
 
 ```json
 {
@@ -95,3 +114,7 @@ Source layout:
 - `src/tree.ts` — tree model: lazy loading, expansion state, git status map, row flattening
 - `src/components/dir-tree-panel.tsx` — panel rendering and mouse interaction
 - `src/open-file.ts` — cross-platform "open with default program"
+
+## License
+
+[MIT](LICENSE)

@@ -1,8 +1,31 @@
 {
   "name": "opencode-dir-tree",
   "version": "0.1.0",
-  "description": "OpenCode TUI plugin: VSCode-style file tree in the sidebar with click/collapse and Ctrl+click to open files with the system default editor",
+  "description": "OpenCode TUI plugin: VS Code-style file tree in the sidebar with git status coloring and click-to-open",
+  "license": "MIT",
   "type": "module",
+  "author": "aihaipeng",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aihaipeng/opencode-dir-tree.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aihaipeng/opencode-dir-tree/issues"
+  },
+  "homepage": "https://github.com/aihaipeng/opencode-dir-tree#readme",
+  "keywords": [
+    "opencode",
+    "tui",
+    "plugin",
+    "file-tree",
+    "opentui"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
       "import": "./dist/tui.js",
@@ -15,7 +38,8 @@
   },
   "scripts": {
     "build": "bun run scripts/build.mjs && tsc --emitDeclarationOnly",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "@opencode-ai/plugin": "^1.18.25",
