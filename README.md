@@ -56,7 +56,7 @@ Keep any existing entries in the `plugin` array — it can hold multiple plugins
 
 ### ⬆️ Updating
 
-- **npm install**: just restart `opencode` — plugins are re-resolved at startup. If the old version is still loaded, delete `~/.cache/opencode/node_modules/` and restart again.
+- **npm install**: just restart `opencode` — plugins are re-resolved at startup. If the old version is still loaded, delete `~/.cache/opencode/packages/opencode-dir-tree-tui@latest/` and restart again.
 - **Local install**: `git pull`, then `bun install && bun run build`, then restart `opencode`.
 
 ### 🔄 Restart OpenCode

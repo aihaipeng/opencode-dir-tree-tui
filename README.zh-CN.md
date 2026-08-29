@@ -56,7 +56,7 @@ bun run build
 
 ### ⬆️ 更新
 
-- **npm 安装**：重启 `opencode` 即可——启动时会重新解析插件版本。若仍加载旧版，删除 `~/.cache/opencode/node_modules/` 后再重启。
+- **npm 安装**：重启 `opencode` 即可——启动时会重新解析插件版本。若仍加载旧版，删除 `~/.cache/opencode/packages/opencode-dir-tree-tui@latest/` 后再重启。
 - **本地安装**：`git pull` → `bun install && bun run build` → 重启 `opencode`。
 
 ### 🔄 重启 OpenCode
