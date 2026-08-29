@@ -6,12 +6,13 @@ An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tre
 
 ## ✨ Features
 
-- 🌲 VS Code-style file tree in the session sidebar, directories load on demand
+- 🌲 VS Code-style file tree in the session sidebar
 - ↕️ Directories sort first, then files, both alphabetically
-- 🎨 Git status coloring: modified (yellow), added (green), deleted (red); non-git projects stay uncolored
+- 🎨 Git status coloring: modified (yellow), added (green), deleted (red) — including nested repositories; non-git projects stay uncolored
 - 🖱️ Right-click a file to open it in your default editor, right-click a directory to open it in your file explorer; Ctrl+click works as an equivalent shortcut
 - 📁 Collapsible panel header; collapsed state and expanded directories persist across restarts
 - 🔄 Refreshes automatically on file changes, including edits made outside OpenCode
+- 🔔 Notifies you when a newer version is published, with the exact cache directory to delete — OpenCode won't pick up a new release on its own
 
 ## 📦 Installation
 
@@ -74,8 +75,6 @@ TUI plugins are loaded at startup; there is no hot reload. Restart `opencode` af
 | Ctrl+click file / directory | Same as right-click |
 | Click the `File Tree` header | Collapse / expand the panel |
 
-> 💡 Git coloring is optional — the tree works fine without git.
-
 ## 🛠️ Troubleshooting
 
 - **No `File Tree` section**: check the path in `tui.json` is absolute and correct, then restart. `opencode --pure` skips all external plugins — handy to confirm the plugin is the cause.
@@ -95,7 +94,7 @@ bun run typecheck  # tsc --noEmit
 
 ```text
 src/
-├── tui.tsx                        # Plugin entry: sidebar slot, refresh wiring, persistence
+├── tui.tsx                        # Plugin entry: sidebar panel, refresh wiring, update check
 ├── tree.ts                        # Tree model: lazy loading, git status, row flattening
 ├── open-file.ts                   # Cross-platform "open with default program"
 └── components/
