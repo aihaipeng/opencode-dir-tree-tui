@@ -8,7 +8,7 @@
 
 - 会话侧边栏中的文件目录树，按目录懒加载（`file.list`，服务端按 `.gitignore` 过滤）
 - 目录排前、文件排后，各自按字母序排列
-- git 状态染色：`M` 修改（黄）、`A` 新增（绿）、`D` 删除（红）——行前缀带状态字母；非 git 仓库保持默认色不干扰
+- git 状态染色：修改（黄）、新增（绿）、删除（红）；非 git 仓库保持默认色不干扰。通过 `git status --porcelain` 实现，覆盖未跟踪与已暂存文件
 - 右键文件 → 用默认文本编辑器打开；右键目录 → 打开文件资源管理器（`start` / `open` / `xdg-open`）
 - Ctrl+左键为等价快捷方式
 - 面板标题可折叠；折叠状态与目录展开状态跨重启持久化（插件 kv）
@@ -36,7 +36,7 @@ npm install -g opencode-dir-tree
 ### 方式二：源码构建
 
 ```bash
-git clone <本仓库>
+git clone https://github.com/aihaipeng/opencode-dir-tree.git
 cd opencode-dir-tree
 bun install
 bun run build

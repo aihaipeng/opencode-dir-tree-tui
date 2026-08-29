@@ -8,7 +8,7 @@ An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tre
 
 - File tree in the session sidebar, lazily loaded per directory (`file.list`, server-side `.gitignore` filtering)
 - Directories sort first, then files, both alphabetically
-- Git status coloring: `M` modified (yellow), `A` added (green), `D` deleted (red) — status letter shown as a row prefix; non-git repos stay uncolored
+- Git status coloring: modified (yellow), added (green), deleted (red); non-git repos stay uncolored. Covers untracked and staged files via `git status --porcelain`
 - Right-click a file to open it in your default editor, right-click a directory to open it in your file explorer (`start` / `open` / `xdg-open`)
 - Ctrl+click works as an equivalent shortcut
 - Collapsible panel header; collapsed state and expanded directories persist across restarts (plugin kv)
@@ -36,7 +36,7 @@ Then reference the package name (see step 2) — no build needed.
 ### Option B: build from source
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/aihaipeng/opencode-dir-tree.git
 cd opencode-dir-tree
 bun install
 bun run build
