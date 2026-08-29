@@ -1,8 +1,9 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"
 import { createSolidTransformPlugin } from "@opentui/solid/bun-plugin"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
+const version = JSON.parse(readFileSync(fileURLToPath(new URL("../package.json", import.meta.url)), "utf8")).version
 const entrypoint = fileURLToPath(new URL("../src/tui.tsx", import.meta.url))
 const outdir = fileURLToPath(new URL("../dist", import.meta.url))
 const outfile = fileURLToPath(new URL("../dist/tui.js", import.meta.url))
@@ -19,6 +20,7 @@ const result = await Bun.build({
   sourcemap: "external",
   write: false,
   plugins: [createSolidTransformPlugin()],
+  define: { __PLUGIN_VERSION__: JSON.stringify(version) },
   external: ["@opencode-ai/plugin/tui", "@opentui/core", "@opentui/solid", "solid-js"],
 })
 
