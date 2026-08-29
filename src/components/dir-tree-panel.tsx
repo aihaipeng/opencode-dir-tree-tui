@@ -10,10 +10,10 @@ import { openPath } from "../open-file"
 
 type ThemeColor = keyof TuiThemeCurrent
 
-const GIT_STATUS_LAYOUT: Record<GitStatus, { mark: string; color: ThemeColor }> = {
-  added: { mark: "A", color: "success" },
-  deleted: { mark: "D", color: "error" },
-  modified: { mark: "M", color: "warning" },
+const GIT_STATUS_COLOR: Record<GitStatus, ThemeColor> = {
+  added: "success",
+  deleted: "error",
+  modified: "warning",
 }
 
 interface DirTreePanelProps {
@@ -39,24 +39,19 @@ export function DirTreePanel(props: DirTreePanelProps) {
     return `${label.slice(0, maxWidth - ellipsis.length)}${ellipsis}`
   }
 
+  /** indent + expand marker, then the name in one colored run. */
   const rowText = (node: TreeNode, depth: number): string => {
     const indent = "  ".repeat(depth)
     const marker = node.isDir ? (expanded(node.path) ? "▾ " : "▸ ") : "  "
-    const statusMark = node.isDir ? " " : gitMark(node)
     const budget = Math.max(1, panelWidth() - indent.length)
-    return indent + marker + statusMark + truncate(node.name, budget - marker.length - 1)
-  }
-
-  const gitMark = (node: TreeNode): string => {
-    const status = props.store.gitStatus(node)
-    return status ? GIT_STATUS_LAYOUT[status].mark : " "
+    return indent + marker + truncate(node.name, budget - marker.length)
   }
 
   const rowColor = (node: TreeNode): RGBA => {
     const t = theme()
     if (node.isDir) return t.secondary
     const status = props.store.gitStatus(node)
-    return status ? (t[GIT_STATUS_LAYOUT[status].color] as RGBA) : t.text
+    return status ? (t[GIT_STATUS_COLOR[status]] as RGBA) : t.text
   }
 
   const open = (node: TreeNode) => {

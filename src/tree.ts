@@ -2,6 +2,7 @@ import { createSignal } from "solid-js"
 import type { Accessor } from "solid-js"
 import { existsSync } from "node:fs"
 import { isAbsolute, join as joinPath } from "node:path"
+import { spawn } from "node:child_process"
 import type { TuiPluginApi } from "@opencode-ai/plugin/tui"
 
 const ROOT = ""
@@ -57,6 +58,54 @@ function toNode(raw: RawNode): TreeNode {
     absolute: raw.absolute.replaceAll("\\", "/"),
     isDir: raw.type === "directory",
   }
+}
+
+interface StatusRow {
+  path: string
+  status: GitStatus
+}
+
+/**
+ * Full git status via the git binary — covers untracked (`??`) and staged
+ * (`A`) files, which OpenCode's /file/status endpoint does not report.
+ */
+function gitStatusRows(directory: string): Promise<StatusRow[]> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", ["-C", directory, "status", "--porcelain", "-z"], {
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+    let out = ""
+    child.stdout!.on("data", (chunk: Buffer) => {
+      out += chunk.toString("utf8")
+    })
+    child.on("error", reject)
+    child.on("close", (code) => {
+      if (code !== 0) {
+        reject(new Error(`git status exited with code ${code}`))
+        return
+      }
+      resolve(parsePorcelain(out))
+    })
+  })
+}
+
+/** Parse `git status --porcelain -z` output. Exported for the self-check. */
+export function parsePorcelain(out: string): StatusRow[] {
+  const rows: StatusRow[] = []
+  for (const entry of out.split("\0")) {
+    if (entry.length < 4) continue
+    const xy = entry.slice(0, 2)
+    let file = entry.slice(3)
+    const renameArrow = file.indexOf(" -> ")
+    if (renameArrow !== -1) file = file.slice(renameArrow + 4)
+        const status: GitStatus = xy.includes("D")
+          ? "deleted"
+          : xy === "??" || xy.includes("A") || xy.includes("R")
+            ? "added"
+            : "modified"
+    rows.push({ path: file.replaceAll("\\", "/"), status })
+  }
+  return rows
 }
 
 export class TreeStore {
@@ -130,9 +179,8 @@ export class TreeStore {
   private async fetchGitStatuses(): Promise<void> {
     if (this.gitUnavailable) return
     try {
-      const result = await this.api.client.file.status()
       const next = new Map<string, GitStatus>()
-      for (const item of result.data ?? []) {
+      for (const item of await gitStatusRows(this.directory)) {
         const absolute = isAbsolute(item.path)
           ? item.path
           : joinPath(this.directory, item.path)
