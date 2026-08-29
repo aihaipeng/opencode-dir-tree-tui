@@ -89,20 +89,40 @@ function gitStatusRows(directory: string): Promise<StatusRow[]> {
   })
 }
 
-/** Parse `git status --porcelain -z` output. Exported for the self-check. */
+/** Repo root for a directory, or null when git is unavailable or the directory is not inside a repo. */
+function repoRoot(directory: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const child = spawn("git", ["-C", directory, "rev-parse", "--show-toplevel"], {
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+    let out = ""
+    child.stdout!.on("data", (chunk: Buffer) => {
+      out += chunk.toString("utf8")
+    })
+    child.on("error", () => resolve(null))
+    child.on("close", (code) => {
+      resolve(code === 0 && out.trim() ? out.trim().replaceAll("\\", "/") : null)
+    })
+  })
+}
+
+// ponytail: null is cached forever; clear repoRoots if late `git init` should revive colors
+/** Parse `git status --porcelain -z` output. */
 export function parsePorcelain(out: string): StatusRow[] {
   const rows: StatusRow[] = []
   for (const entry of out.split("\0")) {
     if (entry.length < 4) continue
     const xy = entry.slice(0, 2)
-    let file = entry.slice(3)
-    const renameArrow = file.indexOf(" -> ")
-    if (renameArrow !== -1) file = file.slice(renameArrow + 4)
-        const status: GitStatus = xy.includes("D")
-          ? "deleted"
-          : xy === "??" || xy.includes("A") || xy.includes("R")
-            ? "added"
-            : "modified"
+    // With -z a rename's old path arrives as its own NUL entry (no XY
+    // prefix); reject anything without a valid XY pair instead of parsing
+    // it as a row.
+    if (!/^[ MADRCUTX?!B]{2}$/.test(xy)) continue
+    const file = entry.slice(3)
+    const status: GitStatus = xy.includes("D")
+      ? "deleted"
+      : xy === "??" || xy.includes("A") || xy.includes("R")
+        ? "added"
+        : "modified"
     rows.push({ path: file.replaceAll("\\", "/"), status })
   }
   return rows
@@ -114,8 +134,9 @@ export class TreeStore {
   private loading = new Set<string>()
   private expandedSet = new Set<string>([ROOT])
   private gitStatuses = new Map<string, GitStatus>()
-  /** Set after the first failed file.status() call: repo has no git, stop polling for it. */
-  private gitUnavailable = false
+  /** dir -> repo root; null = probed, not inside a repo (or no git). */
+  private repoRoots = new Map<string, string | null>()
+  private cachedDir = ""
   private versionSignal: Accessor<number>
   private setVersion: (value: number | ((prev: number) => number)) => number
   private loadError: Accessor<string | undefined>
@@ -162,11 +183,12 @@ export class TreeStore {
 
   /** Load the root plus every directory the user had expanded. */
   requestInitial(): void {
-    void this.requestDirectory(ROOT)
+    const pending = [this.requestDirectory(ROOT)]
     for (const dir of this.expandedSet) {
-      if (dir !== ROOT) void this.requestDirectory(dir)
+      if (dir !== ROOT) pending.push(this.requestDirectory(dir))
     }
-    void this.fetchGitStatuses()
+    // Color the initial view once listings are in, not one poll later.
+    void Promise.all(pending).then(() => this.fetchGitStatuses())
   }
 
   /** Git status for a file node (absolute path), or undefined. */
@@ -177,23 +199,38 @@ export class TreeStore {
   }
 
   private async fetchGitStatuses(): Promise<void> {
-    if (this.gitUnavailable) return
+    // Workspace switch invalidates cached repo roots.
+    if (this.cachedDir !== this.directory) {
+      this.repoRoots.clear()
+      this.cachedDir = this.directory
+    }
+
+    // Probe every listed directory so nested repos (workspace root itself not
+    // being one) still get colors. Results cached per directory.
+    const roots = new Set<string>()
+    for (const dir of this.map.keys()) {
+      if (!this.repoRoots.has(dir)) {
+        this.repoRoots.set(dir, await repoRoot(joinPath(this.directory, dir)))
+      }
+      const root = this.repoRoots.get(dir)
+      if (root) roots.add(root)
+    }
+
     try {
       const next = new Map<string, GitStatus>()
-      for (const item of await gitStatusRows(this.directory)) {
-        const absolute = isAbsolute(item.path)
-          ? item.path
-          : joinPath(this.directory, item.path)
-        next.set(absolute.replaceAll("\\", "/"), item.status)
+      for (const root of roots) {
+        for (const item of await gitStatusRows(root)) {
+          const absolute = isAbsolute(item.path)
+            ? item.path
+            : joinPath(root, item.path)
+          next.set(absolute.replaceAll("\\", "/"), item.status)
+        }
       }
       this.gitStatuses = next
       this.bump()
     } catch {
-      // Git status is a nicety; a failing call (e.g. no git repo) stays silent
-      // and disables further polling for it. Only trust the failure once the
-      // server answered at least one request — startup races would otherwise
-      // disable git status in real repos forever.
-      if (this.map.has(ROOT)) this.gitUnavailable = true
+      // Git status is a nicety; a failing status call stays silent and keeps
+      // the previous colors until the next refresh succeeds.
     }
   }
 

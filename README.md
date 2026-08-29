@@ -4,24 +4,16 @@ English | [简体中文](README.zh-CN.md)
 
 An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tree to the right sidebar: click directories to expand/collapse, right-click (or Ctrl+click) to open files and folders with the system default program, and files are colored by their git status.
 
-## Features
+## ✨ Features
 
-- File tree in the session sidebar, lazily loaded per directory (`file.list`, server-side `.gitignore` filtering)
-- Directories sort first, then files, both alphabetically
-- Git status coloring: modified (yellow), added (green), deleted (red); non-git repos stay uncolored. Covers untracked and staged files via `git status --porcelain`
-- Right-click a file to open it in your default editor, right-click a directory to open it in your file explorer (`start` / `open` / `xdg-open`)
-- Ctrl+click works as an equivalent shortcut
-- Collapsible panel header; collapsed state and expanded directories persist across restarts (plugin kv)
-- Refreshes on OpenCode events (`file.watcher.updated`, `message.updated`, `session.updated`, workspace events) plus a 10s fallback poll (paused while the panel is collapsed, refreshes immediately on re-expand)
-- Deleted/renamed directories are detected via a local filesystem check and removed silently — no error spam
+- 🌲 VS Code-style file tree in the session sidebar, directories load on demand
+- ↕️ Directories sort first, then files, both alphabetically
+- 🎨 Git status coloring: modified (yellow), added (green), deleted (red); non-git projects stay uncolored
+- 🖱️ Right-click a file to open it in your default editor, right-click a directory to open it in your file explorer; Ctrl+click works as an equivalent shortcut
+- 📁 Collapsible panel header; collapsed state and expanded directories persist across restarts
+- 🔄 Refreshes automatically on file changes, including edits made outside OpenCode
 
-## Requirements
-
-- OpenCode with TUI plugin support (`slots.sidebar_content`); tested on 1.18.x
-- [Bun](https://bun.sh) to build
-- Git in the project for status coloring (optional — the tree works without it)
-
-## Installation
+## 📦 Installation
 
 This is a **TUI plugin**, so it must be configured in `~/.config/opencode/tui.json`, not in `opencode.json`.
 
@@ -38,7 +30,7 @@ Add the package name to `~/.config/opencode/tui.json`:
 }
 ```
 
-No manual install is needed — OpenCode installs npm plugins automatically with Bun at startup (cached in `~/.cache/opencode/node_modules/`).
+No manual install is needed — OpenCode installs npm plugins automatically with Bun at startup.
 
 ### Option B: build from source
 
@@ -62,11 +54,11 @@ That produces `dist/tui.js`. Register its absolute path in `~/.config/opencode/t
 
 Keep any existing entries in the `plugin` array — it can hold multiple plugins.
 
-### Restart OpenCode
+### 🔄 Restart OpenCode
 
 TUI plugins are loaded at startup; there is no hot reload. Restart `opencode` after installing or updating.
 
-## Usage
+## 🚀 Usage
 
 | Action | Result |
 | --- | --- |
@@ -77,36 +69,34 @@ TUI plugins are loaded at startup; there is no hot reload. Restart `opencode` af
 | Ctrl+click file / directory | Same as right-click |
 | Click the `File Tree` header | Collapse / expand the panel |
 
-## How it works
+> 💡 Git coloring is optional — the tree works fine without git.
 
-- Registers a `sidebar_content` slot via the OpenCode TUI plugin API (`@opencode-ai/plugin/tui`), slot `order: 260` (between the built-in `MCP` at 200 and `LSP` at 300)
-- Directory listings come from OpenCode itself via `client.file.list({ path })`, lazily per expanded directory; nodes flagged `ignored` are hidden
-- Git status comes from `client.file.status()` and is matched to rows by absolute path
-- Refresh sources: `workspace.ready`, `worktree.ready`, `project.updated`, `file.watcher.updated`, `message.updated`, `session.updated` (debounced) + a 10s poll as a safety net
-- Refreshes swap data in place, so the tree does not flicker on each poll
-- The first failed `file.status()` call disables git polling (non-git repos stay quiet)
+## 🛠️ Troubleshooting
 
-## Troubleshooting
-
-- **No `File Tree` section**: check the path in `tui.json` is absolute and correct, then restart. `opencode --pure` skips all external plugins.
-- **Ctrl+click does nothing**: some terminals do not forward the Ctrl modifier over the mouse protocol. Use right-click instead — it needs no modifier keys.
+- **No `File Tree` section**: check the path in `tui.json` is absolute and correct, then restart. `opencode --pure` skips all external plugins — handy to confirm the plugin is the cause.
+- **Ctrl+click does nothing**: some terminals do not forward the Ctrl modifier over the mouse protocol. Use right-click instead.
 - **No git colors**: the project is not a git repository (or `git` is unavailable). This is silent by design.
-- **Stale tree after editing files outside OpenCode**: wait for the 10s poll, or collapse and re-expand the panel.
+- **Stale tree after editing files outside OpenCode**: wait a few seconds, or collapse and re-expand the panel.
 
-## Development
+## 🧑‍💻 Development
 
 ```bash
+bun install
 bun run build      # bundle to dist/tui.js + declarations
 bun run typecheck  # tsc --noEmit
 ```
 
-Source layout:
+### 📂 Project structure
 
-- `src/tui.tsx` — plugin entry: slot registration, event wiring, poll, kv persistence
-- `src/tree.ts` — tree model: lazy loading, expansion state, git status map, row flattening
-- `src/components/dir-tree-panel.tsx` — panel rendering and mouse interaction
-- `src/open-file.ts` — cross-platform "open with default program"
+```text
+src/
+├── tui.tsx                        # Plugin entry: sidebar slot, refresh wiring, persistence
+├── tree.ts                        # Tree model: lazy loading, git status, row flattening
+├── open-file.ts                   # Cross-platform "open with default program"
+└── components/
+    └── dir-tree-panel.tsx         # Panel rendering and mouse interaction
+```
 
-## License
+## 📄 License
 
 [MIT](LICENSE)

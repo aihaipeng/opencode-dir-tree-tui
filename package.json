@@ -1,6 +1,6 @@
 {
   "name": "opencode-dir-tree-tui",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "OpenCode TUI plugin: VS Code-style file tree in the sidebar with git status coloring and click-to-open",
   "license": "MIT",
   "type": "module",
