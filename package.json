@@ -1,5 +1,5 @@
 {
-  "name": "opencode-dir-tree",
+  "name": "opencode-dir-tree-tui",
   "version": "0.1.1",
   "description": "OpenCode TUI plugin: VS Code-style file tree in the sidebar with git status coloring and click-to-open",
   "license": "MIT",
@@ -7,12 +7,12 @@
   "author": "aihaipeng",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aihaipeng/opencode-dir-tree.git"
+    "url": "git+https://github.com/aihaipeng/opencode-dir-tree-tui.git"
   },
   "bugs": {
-    "url": "https://github.com/aihaipeng/opencode-dir-tree/issues"
+    "url": "https://github.com/aihaipeng/opencode-dir-tree-tui/issues"
   },
-  "homepage": "https://github.com/aihaipeng/opencode-dir-tree#readme",
+  "homepage": "https://github.com/aihaipeng/opencode-dir-tree-tui#readme",
   "keywords": [
     "opencode",
     "tui",

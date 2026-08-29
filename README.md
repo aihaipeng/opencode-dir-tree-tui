@@ -1,4 +1,4 @@
-# opencode-dir-tree
+# opencode-dir-tree-tui
 
 English | [简体中文](README.zh-CN.md)
 
@@ -33,7 +33,7 @@ Add the package name to `~/.config/opencode/tui.json`:
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    "opencode-dir-tree"
+    "opencode-dir-tree-tui"
   ]
 }
 ```
@@ -43,8 +43,8 @@ No manual install is needed — OpenCode installs npm plugins automatically with
 ### Option B: build from source
 
 ```bash
-git clone https://github.com/aihaipeng/opencode-dir-tree.git
-cd opencode-dir-tree
+git clone https://github.com/aihaipeng/opencode-dir-tree-tui.git
+cd opencode-dir-tree-tui
 bun install
 bun run build
 ```
@@ -55,7 +55,7 @@ That produces `dist/tui.js`. Register its absolute path in `~/.config/opencode/t
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    "C:\\path\\to\\opencode-dir-tree\\dist\\tui.js"
+    "C:\\path\\to\\opencode-dir-tree-tui\\dist\\tui.js"
   ]
 }
 ```

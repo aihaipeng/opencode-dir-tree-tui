@@ -6,7 +6,7 @@ import { TreeStore } from "./tree"
 import { DirTreePanel } from "./components/dir-tree-panel"
 
 const SIDEBAR_ORDER = 260
-const COLLAPSED_KEY = "opencode-dir-tree.collapsed"
+const COLLAPSED_KEY = "opencode-dir-tree-tui.collapsed"
 const AUTO_REFRESH_MS = 10_000
 
 const tui: TuiPlugin = async (api) => {
@@ -65,7 +65,7 @@ const tui: TuiPlugin = async (api) => {
 }
 
 const plugin: TuiPluginModule & { id: string } = {
-  id: "opencode-dir-tree",
+  id: "opencode-dir-tree-tui",
   tui,
 }
 

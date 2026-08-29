@@ -6,7 +6,7 @@ import { spawn } from "node:child_process"
 import type { TuiPluginApi } from "@opencode-ai/plugin/tui"
 
 const ROOT = ""
-const EXPANDED_KEY = "opencode-dir-tree.expanded"
+const EXPANDED_KEY = "opencode-dir-tree-tui.expanded"
 
 export type GitStatus = "added" | "deleted" | "modified"
 

@@ -1,4 +1,4 @@
-# opencode-dir-tree
+# opencode-dir-tree-tui
 
 [English](README.md) | 简体中文
 
@@ -33,7 +33,7 @@
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    "opencode-dir-tree"
+    "opencode-dir-tree-tui"
   ]
 }
 ```
@@ -43,8 +43,8 @@
 ### 方式二：源码构建
 
 ```bash
-git clone https://github.com/aihaipeng/opencode-dir-tree.git
-cd opencode-dir-tree
+git clone https://github.com/aihaipeng/opencode-dir-tree-tui.git
+cd opencode-dir-tree-tui
 bun install
 bun run build
 ```
@@ -55,7 +55,7 @@ bun run build
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    "C:\\path\\to\\opencode-dir-tree\\dist\\tui.js"
+    "C:\\path\\to\\opencode-dir-tree-tui\\dist\\tui.js"
   ]
 }
 ```
