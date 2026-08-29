@@ -33,7 +33,8 @@ export function DirTreePanel(props: DirTreePanelProps) {
   const theme = () => props.theme()
 
   const truncate = (label: string, maxWidth: number): string => {
-    if (maxWidth <= 0 || label.length <= maxWidth) return label
+    if (maxWidth <= 0) return ""
+    if (label.length <= maxWidth) return label
     const ellipsis = "..."
     if (maxWidth <= ellipsis.length) return ellipsis.slice(0, maxWidth)
     return `${label.slice(0, maxWidth - ellipsis.length)}${ellipsis}`

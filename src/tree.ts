@@ -175,7 +175,9 @@ export class TreeStore {
       this.expandedSet.delete(key)
     } else {
       this.expandedSet.add(key)
-      void this.requestDirectory(key)
+      // Fetch statuses right away so newly expanded rows get colors instead
+      // of waiting for the next poll.
+      void this.requestDirectory(key).then(() => this.fetchGitStatuses())
     }
     this.persistExpanded()
     this.bump()
@@ -193,8 +195,7 @@ export class TreeStore {
 
   /** Git status for a file node (absolute path), or undefined. */
   gitStatus(node: TreeNode): GitStatus | undefined {
-    const version = this.versionSignal()
-    void version
+    this.versionSignal() // reactive dependency: re-evaluated on bump()
     return this.gitStatuses.get(node.absolute)
   }
 
@@ -348,8 +349,7 @@ export class TreeStore {
 
   /** Flatten visible nodes depth-first. */
   visibleRows(): Array<{ node: TreeNode; depth: number }> {
-    const version = this.versionSignal()
-    void version
+    this.versionSignal() // reactive dependency: re-evaluated on bump()
     const rows: Array<{ node: TreeNode; depth: number }> = []
     const walk = (dir: string, depth: number) => {
       const children = this.map.get(dir)
