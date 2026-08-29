@@ -25,28 +25,9 @@
 
 这是一个 **TUI 插件**，必须配置在 `~/.config/opencode/tui.json`，而不是 `opencode.json`。
 
-### 方式一：npm 安装
+### 方式一：npm 安装（推荐）
 
-```bash
-npm install -g opencode-dir-tree
-```
-
-然后按包名注册（见第 2 步）——无需自行构建。
-
-### 方式二：源码构建
-
-```bash
-git clone https://github.com/aihaipeng/opencode-dir-tree.git
-cd opencode-dir-tree
-bun install
-bun run build
-```
-
-构建产物为 `dist/tui.js`。
-
-### 2. 注册到 OpenCode
-
-npm 安装写包名；源码构建写 `dist/tui.js` 的绝对路径。加入 `~/.config/opencode/tui.json`：
+在 `~/.config/opencode/tui.json` 中写入包名：
 
 ```json
 {
@@ -57,7 +38,18 @@ npm 安装写包名；源码构建写 `dist/tui.js` 的绝对路径。加入 `~/
 }
 ```
 
-或源码构建方式：
+无需手动安装——OpenCode 启动时会用 Bun 自动安装 npm 插件（缓存在 `~/.cache/opencode/node_modules/`）。
+
+### 方式二：源码构建
+
+```bash
+git clone https://github.com/aihaipeng/opencode-dir-tree.git
+cd opencode-dir-tree
+bun install
+bun run build
+```
+
+构建产物为 `dist/tui.js`。在 `~/.config/opencode/tui.json` 中注册其绝对路径：
 
 ```json
 {
@@ -70,9 +62,9 @@ npm 安装写包名；源码构建写 `dist/tui.js` 的绝对路径。加入 `~/
 
 `plugin` 数组可以放多个插件，保留已有条目即可。
 
-### 3. 重启 OpenCode
+### 重启 OpenCode
 
-TUI 插件只在启动时加载，没有热更新。构建或更新插件后需要重启 `opencode`。
+TUI 插件只在启动时加载，没有热更新。安装或更新插件后需要重启 `opencode`。
 
 ## 使用
 
