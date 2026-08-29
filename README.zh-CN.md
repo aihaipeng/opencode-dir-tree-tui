@@ -54,6 +54,11 @@ bun run build
 
 `plugin` 数组可同时装多个插件，保留已有条目即可。
 
+### ⬆️ 更新
+
+- **npm 安装**：重启 `opencode` 即可——启动时会重新解析插件版本。若仍加载旧版，删除 `~/.cache/opencode/node_modules/` 后再重启。
+- **本地安装**：`git pull` → `bun install && bun run build` → 重启 `opencode`。
+
 ### 🔄 重启 OpenCode
 
 TUI 插件随启动加载，无热重载。安装或更新后请重启 `opencode`。

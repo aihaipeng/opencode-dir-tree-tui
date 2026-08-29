@@ -54,6 +54,11 @@ That produces `dist/tui.js`. Register its absolute path in `~/.config/opencode/t
 
 Keep any existing entries in the `plugin` array — it can hold multiple plugins.
 
+### ⬆️ Updating
+
+- **npm install**: just restart `opencode` — plugins are re-resolved at startup. If the old version is still loaded, delete `~/.cache/opencode/node_modules/` and restart again.
+- **Local install**: `git pull`, then `bun install && bun run build`, then restart `opencode`.
+
 ### 🔄 Restart OpenCode
 
 TUI plugins are loaded at startup; there is no hot reload. Restart `opencode` after installing or updating.
