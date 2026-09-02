@@ -1,8 +1,17 @@
 # opencode-dir-tree-tui
 
-[English](README.md) | 简体中文
+<p align="center">
+  <a href="README.md">English</a> | 简体中文
+</p>
+<p align="center">
+  <a href="https://www.npmjs.com/package/opencode-dir-tree-tui"><img src="https://img.shields.io/npm/v/opencode-dir-tree-tui" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/opencode-dir-tree-tui"><img src="https://img.shields.io/npm/dm/opencode-dir-tree-tui" alt="npm downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+</p>
 
 一个 [OpenCode](https://opencode.ai) TUI 插件：在右侧边栏增加 VS Code 风格的文件树，点击目录展开/折叠，右键（或 Ctrl+点击）用系统默认程序打开文件和文件夹，文件按 git 状态着色。
+
+![demo](assets/demo.gif)
 
 ## ✨ 功能
 
@@ -100,6 +109,8 @@ src/
 └── components/
     └── dir-tree-panel.tsx         # 面板渲染与鼠标交互
 ```
+
+如果这个插件对你有帮助，欢迎点个 ⭐——能让更多人发现它。
 
 ## 📄 许可证
 

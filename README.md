@@ -1,8 +1,17 @@
 # opencode-dir-tree-tui
 
-English | [简体中文](README.zh-CN.md)
+<p align="center">
+  English | <a href="README.zh-CN.md">简体中文</a>
+</p>
+<p align="center">
+  <a href="https://www.npmjs.com/package/opencode-dir-tree-tui"><img src="https://img.shields.io/npm/v/opencode-dir-tree-tui" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/opencode-dir-tree-tui"><img src="https://img.shields.io/npm/dm/opencode-dir-tree-tui" alt="npm downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+</p>
 
 An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tree to the right sidebar: click directories to expand/collapse, right-click (or Ctrl+click) to open files and folders with the system default program, and files are colored by their git status.
+
+![demo](assets/demo.gif)
 
 ## ✨ Features
 
@@ -100,6 +109,8 @@ src/
 └── components/
     └── dir-tree-panel.tsx         # Panel rendering and mouse interaction
 ```
+
+If you find this useful, consider giving it a ⭐ — it helps others discover this plugin.
 
 ## 📄 License
 
