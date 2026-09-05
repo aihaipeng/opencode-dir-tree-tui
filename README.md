@@ -27,7 +27,16 @@ An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tre
 
 This is a **TUI plugin**, so it must be configured in `~/.config/opencode/tui.json`, not in `opencode.json`.
 
-### Option A: from npm (recommended)
+### Option 1: let your agent do it (recommended)
+
+Paste this into OpenCode, or any LLM agent:
+
+```text
+Install the opencode-dir-tree-tui plugin by following the instructions here:
+https://raw.githubusercontent.com/aihaipeng/opencode-dir-tree-tui/main/README.md
+```
+
+### Option 2: from npm
 
 Add the package name to `~/.config/opencode/tui.json`:
 
@@ -40,9 +49,9 @@ Add the package name to `~/.config/opencode/tui.json`:
 }
 ```
 
-No manual install is needed — OpenCode installs npm plugins automatically with Bun at startup.
+OpenCode installs npm plugins automatically at startup, **using [Bun](https://bun.sh)** — so Bun must be on your `PATH`. Without it the install fails silently and the TUI can hang on the loading screen (see Troubleshooting below). Check with `bun --version`; if it's missing, install it first: `curl -fsSL https://bun.sh/install | bash` (macOS/Linux).
 
-### Option B: build from source
+### Option 3: build from source
 
 ```bash
 git clone https://github.com/aihaipeng/opencode-dir-tree-tui.git
@@ -73,6 +82,27 @@ Keep any existing entries in the `plugin` array — it can hold multiple plugins
 
 TUI plugins are loaded at startup; there is no hot reload. Restart `opencode` after installing or updating.
 
+### 🤖 For LLM Agents
+
+<details>
+<summary>Step-by-step instructions when an AI agent is doing the install</summary>
+
+1. Check Bun: `bun --version`. If it's missing, install it from <https://bun.sh> first — the npm auto-install fails silently without it and the TUI hangs on the loading screen.
+2. Read `~/.config/opencode/tui.json` (create it if missing). This is a **TUI plugin**: it goes into `tui.json`, never into `opencode.json`.
+3. Add `"opencode-dir-tree-tui"` to the `plugin` array, keeping existing entries:
+
+   ```json
+   {
+     "$schema": "https://opencode.ai/tui.json",
+     "plugin": ["opencode-dir-tree-tui"]
+   }
+   ```
+
+4. Don't run `npm install` / `bun add` manually — OpenCode fetches npm plugins itself at startup.
+5. Tell the user to restart `opencode` (no hot reload). A `File Tree` section in the right sidebar means it worked.
+
+</details>
+
 ## 🚀 Usage
 
 | Action | Result |
@@ -86,6 +116,7 @@ TUI plugins are loaded at startup; there is no hot reload. Restart `opencode` af
 
 ## 🛠️ Troubleshooting
 
+- **TUI stuck on the loading screen after adding the npm plugin**: the automatic install requires Bun on your `PATH` and fails silently when it is missing. Check with `bun --version`; install Bun or fall back to Option 3 (build from source), then restart `opencode`.
 - **No `File Tree` section**: check the path in `tui.json` is absolute and correct, then restart. `opencode --pure` skips all external plugins — handy to confirm the plugin is the cause.
 - **Ctrl+click does nothing**: some terminals do not forward the Ctrl modifier over the mouse protocol. Use right-click instead.
 - **No git colors**: the project is not a git repository (or `git` is unavailable). This is silent by design.
