@@ -48,7 +48,7 @@
 }
 ```
 
-OpenCode 启动时会自动安装 npm 插件，**依赖 [Bun](https://bun.sh)**——`PATH` 中必须有 Bun。缺少时安装会静默失败，TUI 可能一直卡在加载页（见下方故障排查）。用 `bun --version` 检查；没有先安装：`curl -fsSL https://bun.sh/install | bash`（macOS/Linux）。
+无需手动安装——OpenCode 启动时会用自带的内嵌 Bun 运行时自动拉取 npm 插件（不需要单独安装 Bun）。若 TUI 卡在加载页，多半是内嵌运行时解析依赖时挂起——见下方故障排查。
 
 ### 方式三：源码构建
 
@@ -86,7 +86,7 @@ TUI 插件随启动加载，无热重载。安装或更新后请重启 `opencode
 <details>
 <summary>AI agent 代装时按以下步骤执行</summary>
 
-1. 检查 Bun：`bun --version`。若未安装，先从 <https://bun.sh> 安装——缺少 Bun 时 npm 自动安装会静默失败，TUI 会卡在加载页。
+1. 不要让用户安装 Bun——OpenCode 用自带的内嵌 Bun 运行时安装 npm 插件。若启动卡在加载页，退出后运行 `opencode --print-logs` 查看依赖解析是否卡住；若是，删除 `~/.cache/opencode/` 后重试。
 2. 读取 `~/.config/opencode/tui.json`（不存在则创建）。这是 **TUI 插件**：必须写入 `tui.json`，绝不写入 `opencode.json`。
 3. 将 `"opencode-dir-tree-tui"` 加入 `plugin` 数组，保留已有条目：
 
@@ -115,7 +115,7 @@ TUI 插件随启动加载，无热重载。安装或更新后请重启 `opencode
 
 ## 🛠️ 故障排查
 
-- **添加 npm 插件后 TUI 卡在加载页**：自动安装依赖 `PATH` 中的 Bun，缺失时会静默失败。用 `bun --version` 检查；安装 Bun，或改用方式三（源码构建），然后重启 `opencode`。
+- **添加 npm 插件后 TUI 卡在加载页**：通常是 OpenCode 内嵌的 Bun 运行时解析依赖时挂起（代理/慢网络下常见，与是否安装 Bun 无关）。退出后运行 `opencode --print-logs` 观察安装过程；若卡住，删除缓存 `~/.cache/opencode/` 后重试，或改用方式三（源码构建）。
 - **没有 `File Tree` 区块**：检查 `tui.json` 路径为绝对路径且正确，然后重启。`opencode --pure` 会跳过所有外部插件，可用来确认问题是否出在插件上。
 - **Ctrl+点击无反应**：部分终端不转发 Ctrl 修饰键，请改用右键。
 - **没有 git 着色**：项目不是 git 仓库（或 `git` 不可用），设计上保持静默。
