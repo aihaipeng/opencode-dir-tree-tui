@@ -2,11 +2,29 @@
 
 import { For, Show, createMemo, createSignal } from "solid-js"
 import type { Accessor } from "solid-js"
+import { spawn } from "node:child_process"
 import type { TuiThemeCurrent } from "@opencode-ai/plugin/tui"
 import { MouseButton } from "@opentui/core"
 import type { MouseEvent, RGBA } from "@opentui/core"
 import type { GitStatus, TreeStore, TreeNode } from "../tree"
-import { openPath } from "../open-file"
+
+/** Open a file or directory with the system default program. */
+function openPath(absolutePath: string): boolean {
+  const cmd =
+    process.platform === "win32"
+      ? [process.env.ComSpec ?? "cmd.exe", "/c", "start", "", absolutePath.replaceAll("/", "\\")]
+      : [process.platform === "darwin" ? "open" : "xdg-open", absolutePath]
+  try {
+    const child = spawn(cmd[0]!, cmd.slice(1), { detached: true, stdio: "ignore" })
+    // A missing opener (e.g. no xdg-open) emits 'error' async; without a
+    // listener that would crash the TUI.
+    child.on("error", () => {})
+    child.unref()
+    return true
+  } catch {
+    return false
+  }
+}
 
 type ThemeColor = keyof TuiThemeCurrent
 
@@ -28,7 +46,6 @@ export function DirTreePanel(props: DirTreePanelProps) {
   let panelBox: { width: number } | undefined
 
   const rows = createMemo(() => props.store.visibleRows())
-  const loadError = createMemo(() => props.store.errorSignal()())
   const expanded = (path: string) => props.store.isExpanded(path)
   const theme = () => props.theme()
 
@@ -113,7 +130,7 @@ export function DirTreePanel(props: DirTreePanelProps) {
       </box>
 
       <Show when={!props.collapsed()}>
-        <Show when={loadError()}>
+        <Show when={props.store.loadError()}>
           {(error) => <text style={{ fg: theme().error }}>{error}</text>}
         </Show>
 

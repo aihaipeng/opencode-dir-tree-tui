@@ -9,23 +9,46 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
-An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tree to the right sidebar: click directories to expand/collapse, right-click (or Ctrl+click) to open files and folders with the system default program, and files are colored by their git status.
+An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tree to the right sidebar: expand/collapse directories, open files and folders with the system default program, and see git status at a glance.
 
 ![demo](assets/demo.gif)
 
 ## ✨ Features
 
-- 🌲 VS Code-style file tree in the session sidebar
-- ↕️ Directories sort first, then files, both alphabetically
-- 🎨 Git status coloring: modified (yellow), added (green), deleted (red) — including nested repositories; non-git projects stay uncolored
-- 🖱️ Right-click a file to open it in your default editor, right-click a directory to open it in your file explorer; Ctrl+click works as an equivalent shortcut
-- 📁 Collapsible panel header; collapsed state and expanded directories persist across restarts
-- 🔄 Refreshes automatically on file changes, including edits made outside OpenCode
-- 🔔 Notifies you when a newer version is published, with the exact cache directory to delete — OpenCode won't pick up a new release on its own
+- ↕️ Directories sort first, then files — both alphabetically
+- 🎨 Git status coloring: added (green), modified (yellow), deleted (red); non-git projects stay uncolored
+- 🧹 Hides common build/dependency directories (`node_modules`, `dist`, `build`, ...) even when not git-ignored — configurable, see below
+- 🖱️ Right-click (or Ctrl+click) opens files in your editor / directories in your file explorer
+- 📁 Collapsible panel; expanded directories and panel state persist across restarts
+- 🔄 Auto-refreshes on file changes, including edits made outside OpenCode
+- 🔔 Update notifications with the exact cache directory to delete
+
+## ⚙️ Configuration
+
+Common build/dependency directories are hidden even when not git-ignored. Defaults:
+
+```text
+node_modules  dist  build  out  target  __pycache__
+```
+
+Names match exactly, at any depth. Optional plugin options (tuple form in `~/.config/opencode/tui.json`) apply on top of the defaults:
+
+```json
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": [
+    ["opencode-dir-tree-tui", { "hiddenDirs": ["logs", ".cache"], "visibleDirs": ["build"] }]
+  ]
+}
+```
+
+- `hiddenDirs`: extra directory names to hide, merged into the defaults.
+- `visibleDirs`: default names to show again (e.g. un-hide `build` if you keep source there).
+- Omit both (or register the plugin as a plain string) to keep just the defaults. Restart `opencode` after changing the config.
 
 ## 📦 Installation
 
-This is a **TUI plugin**, so it must be configured in `~/.config/opencode/tui.json`, not in `opencode.json`.
+This is a **TUI plugin**: it goes into `~/.config/opencode/tui.json`, not `opencode.json`.
 
 ### Option 1: let your agent do it (recommended)
 
@@ -38,8 +61,6 @@ https://raw.githubusercontent.com/aihaipeng/opencode-dir-tree-tui/main/README.md
 
 ### Option 2: from npm
 
-Add the package name to `~/.config/opencode/tui.json`:
-
 ```json
 {
   "$schema": "https://opencode.ai/tui.json",
@@ -49,7 +70,7 @@ Add the package name to `~/.config/opencode/tui.json`:
 }
 ```
 
-No manual install steps — OpenCode fetches npm plugins automatically at startup with its embedded Bun runtime (no separate Bun install needed). If the TUI hangs on the loading screen, the embedded runtime is likely stuck resolving packages — see Troubleshooting below.
+No manual steps — OpenCode fetches npm plugins itself at startup (embedded Bun runtime, nothing to install). Keep any existing entries; `plugin` holds multiple plugins. Loading screen hangs? See Troubleshooting.
 
 ### Option 3: build from source
 
@@ -60,35 +81,22 @@ bun install
 bun run build
 ```
 
-That produces `dist/tui.js`. Register its absolute path in `~/.config/opencode/tui.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/tui.json",
-  "plugin": [
-    "C:\\path\\to\\opencode-dir-tree-tui\\dist\\tui.js"
-  ]
-}
-```
-
-Keep any existing entries in the `plugin` array — it can hold multiple plugins.
+Then register the absolute path of `dist/tui.js` in `plugin` the same way as Option 2 (e.g. `"C:\\path\\to\\opencode-dir-tree-tui\\dist\\tui.js"`).
 
 ### ⬆️ Updating
 
-- **npm install**: just restart `opencode` — plugins are re-resolved at startup. If the old version is still loaded, delete `~/.cache/opencode/packages/opencode-dir-tree-tui@latest/` and restart again.
-- **Local install**: `git pull`, then `bun install && bun run build`, then restart `opencode`.
+- **npm install**: restart `opencode`; plugins re-resolve at startup. If the old version is still loaded, delete `~/.cache/opencode/packages/opencode-dir-tree-tui@latest/` and restart again.
+- **Local install**: `git pull`, then `bun install && bun run build`, then restart.
 
-### 🔄 Restart OpenCode
-
-TUI plugins are loaded at startup; there is no hot reload. Restart `opencode` after installing or updating.
+No hot reload — restart `opencode` after installing, updating, or changing config.
 
 ### 🤖 For LLM Agents
 
 <details>
 <summary>Step-by-step instructions when an AI agent is doing the install</summary>
 
-1. Don't ask the user to install Bun — OpenCode installs npm plugins with its own embedded Bun runtime. If startup hangs on the loading screen, quit and run `opencode --print-logs` to see whether package resolution is stuck; if so, delete `~/.cache/opencode/` and retry.
-2. Read `~/.config/opencode/tui.json` (create it if missing). This is a **TUI plugin**: it goes into `tui.json`, never into `opencode.json`.
+1. Don't ask the user to install Bun — OpenCode installs npm plugins with its own embedded runtime. Startup hang: run `opencode --print-logs`; if package resolution is stuck, delete `~/.cache/opencode/` and retry.
+2. Edit `~/.config/opencode/tui.json` (create if missing) — TUI plugins go here, never `opencode.json`.
 3. Add `"opencode-dir-tree-tui"` to the `plugin` array, keeping existing entries:
 
    ```json
@@ -98,8 +106,8 @@ TUI plugins are loaded at startup; there is no hot reload. Restart `opencode` af
    }
    ```
 
-4. Don't run `npm install` / `bun add` manually — OpenCode fetches npm plugins itself at startup.
-5. Tell the user to restart `opencode` (no hot reload). A `File Tree` section in the right sidebar means it worked.
+4. No manual `npm install` / `bun add` — OpenCode fetches npm plugins itself at startup.
+5. Restart `opencode` (no hot reload). A `File Tree` section in the right sidebar means it worked.
 
 </details>
 
@@ -108,19 +116,16 @@ TUI plugins are loaded at startup; there is no hot reload. Restart `opencode` af
 | Action | Result |
 | --- | --- |
 | Click a directory | Expand / collapse it |
-| Click a file | Nothing (by design) |
-| Right-click a file | Open in default text editor |
-| Right-click a directory | Open in file explorer |
+| Right-click a file / directory | Open in default text editor / file explorer |
 | Ctrl+click file / directory | Same as right-click |
 | Click the `File Tree` header | Collapse / expand the panel |
 
 ## 🛠️ Troubleshooting
 
-- **TUI stuck on the loading screen after adding the npm plugin**: OpenCode's embedded Bun runtime is probably hanging while resolving the package (common behind proxies or slow networks; no separate Bun install involved). Quit, then run `opencode --print-logs` to watch the install; if it hangs, delete the cache (`~/.cache/opencode/`) and retry, or fall back to Option 3 (build from source).
-- **No `File Tree` section**: check the path in `tui.json` is absolute and correct, then restart. `opencode --pure` skips all external plugins — handy to confirm the plugin is the cause.
-- **Ctrl+click does nothing**: some terminals do not forward the Ctrl modifier over the mouse protocol. Use right-click instead.
-- **No git colors**: the project is not a git repository (or `git` is unavailable). This is silent by design.
-- **Stale tree after editing files outside OpenCode**: wait a few seconds, or collapse and re-expand the panel.
+- **TUI stuck on the loading screen**: the embedded runtime is likely hanging while resolving the package (common behind proxies / slow networks). Run `opencode --print-logs` to watch it; if stuck, delete `~/.cache/opencode/` and retry, or build from source.
+- **No `File Tree` section**: check the path in `tui.json` is absolute and correct, then restart. `opencode --pure` skips all external plugins — handy to isolate the cause.
+- **Ctrl+click does nothing**: some terminals don't forward the Ctrl modifier over the mouse protocol. Use right-click.
+- **No git colors**: the project is not a git repository (or `git` is unavailable). Silent by design.
 
 ## 🧑‍💻 Development
 
@@ -135,10 +140,9 @@ bun run typecheck  # tsc --noEmit
 ```text
 src/
 ├── tui.tsx                        # Plugin entry: sidebar panel, refresh wiring, update check
-├── tree.ts                        # Tree model: lazy loading, git status, row flattening
-├── open-file.ts                   # Cross-platform "open with default program"
+├── tree.ts                        # Tree model: lazy loading, git status, hidden dirs, sorting
 └── components/
-    └── dir-tree-panel.tsx         # Panel rendering and mouse interaction
+    └── dir-tree-panel.tsx         # Panel rendering, mouse interaction, open-with-default-program
 ```
 
 If you find this useful, consider giving it a ⭐ — it helps others discover this plugin.

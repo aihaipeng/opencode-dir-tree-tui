@@ -2,7 +2,7 @@
 
 import { createSignal } from "solid-js"
 import type { TuiPlugin, TuiPluginModule } from "@opencode-ai/plugin/tui"
-import { TreeStore } from "./tree"
+import { TreeStore, resolveHiddenDirs } from "./tree"
 import { DirTreePanel } from "./components/dir-tree-panel"
 
 const SIDEBAR_ORDER = 260
@@ -34,8 +34,8 @@ const checkForUpdates = async (api: Awaited<Parameters<TuiPlugin>[0]>) => {
   }
 }
 
-const tui: TuiPlugin = async (api) => {
-  const store = new TreeStore(api)
+const tui: TuiPlugin = async (api, options) => {
+  const store = new TreeStore(api, resolveHiddenDirs(options))
   const [collapsed, setCollapsed] = createSignal(Boolean(api.kv.get(COLLAPSED_KEY, false)))
 
   const unregisters = (
@@ -44,8 +44,6 @@ const tui: TuiPlugin = async (api) => {
       ["worktree.ready", 0],
       ["project.updated", 400],
       ["file.watcher.updated", 400],
-      ["message.updated", 500],
-      ["session.updated", 500],
     ] as const
   ).map(([type, delay]) => api.event.on(type, () => store.scheduleRefresh(delay)))
 

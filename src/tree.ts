@@ -8,6 +8,43 @@ import type { TuiPluginApi } from "@opencode-ai/plugin/tui"
 const ROOT = ""
 const EXPANDED_KEY = "opencode-dir-tree-tui.expanded"
 
+/**
+ * The most common build artifact / dependency directory names, hidden even
+ * when not git-ignored (matters most for non-git workspaces or sloppy
+ * .gitignore). Users extend this via `hiddenDirs` or re-show entries via
+ * `visibleDirs` — no need to copy the list.
+ */
+export const DEFAULT_HIDDEN_DIRS: readonly string[] = [
+  "node_modules",
+  "dist",
+  "build",
+  "out",
+  "target",
+  "__pycache__",
+]
+
+const HIDDEN_DIRS: ReadonlySet<string> = new Set(DEFAULT_HIDDEN_DIRS)
+
+/**
+ * Resolve the plugin options `hiddenDirs` (extra names to hide, merged into
+ * the defaults) and `visibleDirs` (default names to show again).
+ */
+export function resolveHiddenDirs(options: { hiddenDirs?: unknown; visibleDirs?: unknown } | undefined): ReadonlySet<string> {
+  const set = new Set(DEFAULT_HIDDEN_DIRS)
+  const apply = (value: unknown, hide: boolean) => {
+    if (!Array.isArray(value)) return
+    for (const item of value) {
+      if (typeof item === "string" && item.length > 0) {
+        if (hide) set.add(item)
+        else set.delete(item)
+      }
+    }
+  }
+  apply(options?.hiddenDirs, true)
+  apply(options?.visibleDirs, false)
+  return set
+}
+
 export type GitStatus = "added" | "deleted" | "modified"
 
 export interface TreeNode {
@@ -34,20 +71,7 @@ function normalizePath(input: string): string {
 function describeError(error: unknown): string {
   if (error instanceof Error) return error.message
   if (typeof error === "string") return error
-  const e = error as {
-    status?: number
-    statusText?: string
-    message?: string
-    body?: { message?: string } | string
-  }
-  const parts: string[] = []
-  if (typeof e?.status === "number") parts.push(String(e.status))
-  if (typeof e?.statusText === "string") parts.push(e.statusText)
-  const bodyMessage = typeof e?.body === "string" ? e.body : e?.body?.message
-  if (typeof bodyMessage === "string" && bodyMessage.length > 0) parts.push(bodyMessage)
-  if (typeof e?.message === "string" && e.message.length > 0) parts.push(e.message)
-  if (parts.length === 0) return JSON.stringify(error)
-  return parts.join(" ")
+  return JSON.stringify(error) ?? String(error)
 }
 
 function toNode(raw: RawNode): TreeNode {
@@ -58,6 +82,12 @@ function toNode(raw: RawNode): TreeNode {
     absolute: raw.absolute.replaceAll("\\", "/"),
     isDir: raw.type === "directory",
   }
+}
+
+/** VS Code order: directories first, then case-insensitive natural name order. */
+function compareNodes(a: TreeNode, b: TreeNode): number {
+  if (a.isDir !== b.isDir) return a.isDir ? -1 : 1
+  return a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true })
 }
 
 interface StatusRow {
@@ -106,7 +136,6 @@ function repoRoot(directory: string): Promise<string | null> {
   })
 }
 
-// ponytail: null is cached forever; clear repoRoots if late `git init` should revive colors
 /** Parse `git status --porcelain -z` output. */
 export function parsePorcelain(out: string): StatusRow[] {
   const rows: StatusRow[] = []
@@ -130,16 +159,18 @@ export function parsePorcelain(out: string): StatusRow[] {
 
 export class TreeStore {
   readonly api: TuiPluginApi
+  private readonly hiddenDirs: ReadonlySet<string>
   private map = new Map<string, TreeNode[]>()
   private loading = new Set<string>()
   private expandedSet = new Set<string>([ROOT])
   private gitStatuses = new Map<string, GitStatus>()
-  /** dir -> repo root; null = probed, not inside a repo (or no git). */
-  private repoRoots = new Map<string, string | null>()
-  private cachedDir = ""
+  // ponytail: single root probe cached until the workspace switches; late
+  // `git init` in the root (or nested repos) won't get colors — restore
+  // per-directory probing if nested repos ever need colors
+  private repoRootCache: { dir: string; root: string | null } | undefined
   private versionSignal: Accessor<number>
   private setVersion: (value: number | ((prev: number) => number)) => number
-  private loadError: Accessor<string | undefined>
+  readonly loadError: Accessor<string | undefined>
   private setLoadError: (value: string | undefined) => void
   private refreshTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -148,8 +179,9 @@ export class TreeStore {
     return this.api.state.path.directory
   }
 
-  constructor(api: TuiPluginApi) {
+  constructor(api: TuiPluginApi, hiddenDirs: ReadonlySet<string> = HIDDEN_DIRS) {
     this.api = api
+    this.hiddenDirs = hiddenDirs
     const [version, setVersion] = createSignal(0)
     const [loadError, setLoadError] = createSignal<string | undefined>(undefined)
     this.versionSignal = version
@@ -200,32 +232,23 @@ export class TreeStore {
   }
 
   private async fetchGitStatuses(): Promise<void> {
-    // Workspace switch invalidates cached repo roots.
-    if (this.cachedDir !== this.directory) {
-      this.repoRoots.clear()
-      this.cachedDir = this.directory
-    }
-
-    // Probe every listed directory so nested repos (workspace root itself not
-    // being one) still get colors. Results cached per directory.
-    const roots = new Set<string>()
-    for (const dir of this.map.keys()) {
-      if (!this.repoRoots.has(dir)) {
-        this.repoRoots.set(dir, await repoRoot(joinPath(this.directory, dir)))
-      }
-      const root = this.repoRoots.get(dir)
-      if (root) roots.add(root)
+    let root: string | null
+    const cached = this.repoRootCache
+    if (cached?.dir === this.directory) {
+      root = cached.root
+    } else {
+      root = await repoRoot(this.directory)
+      this.repoRootCache = { dir: this.directory, root }
     }
 
     try {
+      if (!root) return
       const next = new Map<string, GitStatus>()
-      for (const root of roots) {
-        for (const item of await gitStatusRows(root)) {
-          const absolute = isAbsolute(item.path)
-            ? item.path
-            : joinPath(root, item.path)
-          next.set(absolute.replaceAll("\\", "/"), item.status)
-        }
+      for (const item of await gitStatusRows(root)) {
+        const absolute = isAbsolute(item.path)
+          ? item.path
+          : joinPath(root, item.path)
+        next.set(absolute.replaceAll("\\", "/"), item.status)
       }
       this.gitStatuses = next
       this.bump()
@@ -233,10 +256,6 @@ export class TreeStore {
       // Git status is a nicety; a failing status call stays silent and keeps
       // the previous colors until the next refresh succeeds.
     }
-  }
-
-  errorSignal(): Accessor<string | undefined> {
-    return this.loadError
   }
 
   private persistExpanded(): void {
@@ -263,7 +282,13 @@ export class TreeStore {
       }
 
       const raw = (result.data ?? []) as RawNode[]
-      this.map.set(key, raw.filter((node) => !node.ignored).map(toNode))
+      this.map.set(
+        key,
+        raw
+          .filter((node) => !node.ignored && !(node.type === "directory" && this.hiddenDirs.has(node.name)))
+          .map(toNode)
+          .sort(compareNodes),
+      )
       this.loading.delete(key)
       this.setLoadError(undefined)
       this.bump()
