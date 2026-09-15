@@ -17,7 +17,7 @@
 
 - ↕️ 目录排前、文件排后，各自按名称排序
 - 🎨 git 状态着色：新增（绿）、修改（黄）、删除（红）；非 git 项目不着色
-- 🧹 默认不隐藏任何东西——通过 `hiddenDirs` 选项显式声明要隐藏什么（见配置）
+- 🧹 按需隐藏：只有 `hiddenDirs` 列出的名字才被隐藏——默认什么都不隐藏
 - 🖱️ 右键（或 Ctrl+点击）用默认编辑器打开文件、打开文件资源管理器
 - 📁 面板可折叠，展开目录与面板状态跨重启保留
 - 🔄 文件变更自动刷新，外部编辑也能同步
@@ -27,23 +27,18 @@
 
 目录树展示 OpenCode 文件 API 返回的一切——包括 gitignore 的文件。唯一的隐藏来自你自己声明：`hiddenDirs` 里填什么，就隐藏什么（名称精确匹配、任意层级生效）。
 
-以下几种注册方式行为完全一致——什么都不隐藏：
-
-- `"opencode-dir-tree-tui"`
-- `["opencode-dir-tree-tui", { "hiddenDirs": [] }]`
-
-要隐藏条目，填入名字即可：
+参考配置（可整体复制粘贴；不写 `hiddenDirs` 或留空数组则什么都不隐藏）：
 
 ```json
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    ["opencode-dir-tree-tui", { "hiddenDirs": ["node_modules", "dist", "logs"] }]
+    ["opencode-dir-tree-tui", { "hiddenDirs": ["node_modules", "__pycache__", ".git"] }]
   ]
 }
 ```
 
-- `hiddenDirs`：要隐藏的目录/文件名数组。改完配置后重启 `opencode`。
+- 改完配置后重启 `opencode`。
 - 说明：少数系统条目（如 Windows 的 `Application Data` 等 junction 链接）由 OpenCode 服务端自行过滤，不会到达插件。
 
 ## 📦 安装
@@ -64,12 +59,12 @@
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    "opencode-dir-tree-tui"
+    ["opencode-dir-tree-tui", { "hiddenDirs": [] }]
   ]
 }
 ```
 
-无需手动操作——OpenCode 启动时用内嵌 Bun 运行时自行拉取 npm 插件。保留 `plugin` 里的已有条目，数组可装多个插件。加载页卡住见故障排查。
+无需手动操作——OpenCode 启动时自行拉取 npm 插件。保留已有条目，数组可装多个插件。加载页卡住见故障排查。
 
 ### 方式三：源码构建
 
@@ -96,12 +91,12 @@ bun run build
 
 1. 不要让用户安装 Bun——OpenCode 用内嵌运行时安装 npm 插件。启动卡住时运行 `opencode --print-logs` 查看依赖解析；若卡住，删除 `~/.cache/opencode/` 后重试。
 2. 编辑 `~/.config/opencode/tui.json`（不存在则创建）——TUI 插件写这里，绝不写 `opencode.json`。
-3. 将 `"opencode-dir-tree-tui"` 加入 `plugin` 数组，保留已有条目：
+3. 将插件以 `[包名, 选项]` 元组形式加入 `plugin` 数组（纯字符串也可以），保留已有条目：
 
    ```json
    {
      "$schema": "https://opencode.ai/tui.json",
-     "plugin": ["opencode-dir-tree-tui"]
+     "plugin": [["opencode-dir-tree-tui", { "hiddenDirs": [] }]]
    }
    ```
 

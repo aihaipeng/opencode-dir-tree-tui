@@ -17,7 +17,7 @@ An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tre
 
 - ↕️ Directories sort first, then files — both alphabetically
 - 🎨 Git status coloring: added (green), modified (yellow), deleted (red); non-git projects stay uncolored
-- 🧹 Nothing is hidden by default — you declare exactly what to hide via the `hiddenDirs` option (see Configuration)
+- 🧹 Opt-in hiding: only names listed in `hiddenDirs` are hidden — nothing by default
 - 🖱️ Right-click (or Ctrl+click) opens files in your editor / directories in your file explorer
 - 📁 Collapsible panel; expanded directories and panel state persist across restarts
 - 🔄 Auto-refreshes on file changes, including edits made outside OpenCode
@@ -27,23 +27,18 @@ An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tre
 
 The tree shows everything OpenCode's file API returns — including gitignored files. The only hiding is what you declare yourself: whatever names you put in `hiddenDirs` gets hidden (exact match, any depth).
 
-All of the following registrations behave identically — nothing is hidden:
-
-- `"opencode-dir-tree-tui"`
-- `["opencode-dir-tree-tui", { "hiddenDirs": [] }]`
-
-To hide entries, fill in names:
+Reference config (paste as-is; omitting `hiddenDirs` or leaving it empty hides nothing):
 
 ```json
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    ["opencode-dir-tree-tui", { "hiddenDirs": ["node_modules", "dist", "logs"] }]
+    ["opencode-dir-tree-tui", { "hiddenDirs": ["node_modules", "__pycache__", ".git"] }]
   ]
 }
 ```
 
-- `hiddenDirs`: array of directory/file names to hide. Restart `opencode` after changing the config.
+- Restart `opencode` after changing the config.
 - Note: a few system entries (e.g. Windows junction links like `Application Data`) are filtered by OpenCode's server itself and never reach the plugin.
 
 ## 📦 Installation
@@ -65,12 +60,12 @@ https://raw.githubusercontent.com/aihaipeng/opencode-dir-tree-tui/main/README.md
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    "opencode-dir-tree-tui"
+    ["opencode-dir-tree-tui", { "hiddenDirs": [] }]
   ]
 }
 ```
 
-No manual steps — OpenCode fetches npm plugins itself at startup (embedded Bun runtime, nothing to install). Keep any existing entries; `plugin` holds multiple plugins. Loading screen hangs? See Troubleshooting.
+No manual steps — OpenCode fetches npm plugins itself at startup. Keep existing entries; the array holds multiple plugins. Loading-screen hang? See Troubleshooting.
 
 ### Option 3: build from source
 
@@ -97,12 +92,12 @@ No hot reload — restart `opencode` after installing, updating, or changing con
 
 1. Don't ask the user to install Bun — OpenCode installs npm plugins with its own embedded runtime. Startup hang: run `opencode --print-logs`; if package resolution is stuck, delete `~/.cache/opencode/` and retry.
 2. Edit `~/.config/opencode/tui.json` (create if missing) — TUI plugins go here, never `opencode.json`.
-3. Add `"opencode-dir-tree-tui"` to the `plugin` array, keeping existing entries:
+3. Add the plugin as a `[name, options]` tuple (a plain string works too), keeping existing entries:
 
    ```json
    {
      "$schema": "https://opencode.ai/tui.json",
-     "plugin": ["opencode-dir-tree-tui"]
+     "plugin": [["opencode-dir-tree-tui", { "hiddenDirs": [] }]]
    }
    ```
 
@@ -122,7 +117,7 @@ No hot reload — restart `opencode` after installing, updating, or changing con
 
 ## 🛠️ Troubleshooting
 
-- **TUI stuck on the loading screen**: the embedded runtime is likely hanging while resolving the package (common behind proxies / slow networks). Run `opencode --print-logs` to watch it; if stuck, delete `~/.cache/opencode/` and retry, or build from source.
+- **TUI stuck on the loading screen**: the embedded runtime is likely stuck resolving the package (proxies / slow networks). Run `opencode --print-logs`; if stuck, delete `~/.cache/opencode/` and retry, or build from source.
 - **No `File Tree` section**: check the path in `tui.json` is absolute and correct, then restart. `opencode --pure` skips all external plugins — handy to isolate the cause.
 - **Ctrl+click does nothing**: some terminals don't forward the Ctrl modifier over the mouse protocol. Use right-click.
 - **No git colors**: the project is not a git repository (or `git` is unavailable). Silent by design.
