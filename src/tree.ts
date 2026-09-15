@@ -9,40 +9,13 @@ const ROOT = ""
 const EXPANDED_KEY = "opencode-dir-tree-tui.expanded"
 
 /**
- * The most common build artifact / dependency directory names, hidden even
- * when not git-ignored (matters most for non-git workspaces or sloppy
- * .gitignore). Users extend this via `hiddenDirs` or re-show entries via
- * `visibleDirs` — no need to copy the list.
+ * The only hiding the plugin does comes from the user's explicit `hiddenDirs`
+ * option — empty means show everything the server returns.
  */
-export const DEFAULT_HIDDEN_DIRS: readonly string[] = [
-  "node_modules",
-  "dist",
-  "build",
-  "out",
-  "target",
-  "__pycache__",
-]
-
-const HIDDEN_DIRS: ReadonlySet<string> = new Set(DEFAULT_HIDDEN_DIRS)
-
-/**
- * Resolve the plugin options `hiddenDirs` (extra names to hide, merged into
- * the defaults) and `visibleDirs` (default names to show again).
- */
-export function resolveHiddenDirs(options: { hiddenDirs?: unknown; visibleDirs?: unknown } | undefined): ReadonlySet<string> {
-  const set = new Set(DEFAULT_HIDDEN_DIRS)
-  const apply = (value: unknown, hide: boolean) => {
-    if (!Array.isArray(value)) return
-    for (const item of value) {
-      if (typeof item === "string" && item.length > 0) {
-        if (hide) set.add(item)
-        else set.delete(item)
-      }
-    }
-  }
-  apply(options?.hiddenDirs, true)
-  apply(options?.visibleDirs, false)
-  return set
+export function resolveHiddenDirs(options: { hiddenDirs?: unknown } | undefined): ReadonlySet<string> {
+  const raw = options?.hiddenDirs
+  if (!Array.isArray(raw)) return new Set()
+  return new Set(raw.filter((item): item is string => typeof item === "string" && item.length > 0))
 }
 
 export type GitStatus = "added" | "deleted" | "modified"
@@ -60,7 +33,6 @@ interface RawNode {
   path: string
   absolute: string
   type: "file" | "directory"
-  ignored: boolean
 }
 
 function normalizePath(input: string): string {
@@ -179,7 +151,7 @@ export class TreeStore {
     return this.api.state.path.directory
   }
 
-  constructor(api: TuiPluginApi, hiddenDirs: ReadonlySet<string> = HIDDEN_DIRS) {
+  constructor(api: TuiPluginApi, hiddenDirs: ReadonlySet<string> = new Set()) {
     this.api = api
     this.hiddenDirs = hiddenDirs
     const [version, setVersion] = createSignal(0)
@@ -285,7 +257,7 @@ export class TreeStore {
       this.map.set(
         key,
         raw
-          .filter((node) => !node.ignored && !(node.type === "directory" && this.hiddenDirs.has(node.name)))
+          .filter((node) => !this.hiddenDirs.has(node.name))
           .map(toNode)
           .sort(compareNodes),
       )

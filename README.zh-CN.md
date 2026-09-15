@@ -17,7 +17,7 @@
 
 - ↕️ 目录排前、文件排后，各自按名称排序
 - 🎨 git 状态着色：新增（绿）、修改（黄）、删除（红）；非 git 项目不着色
-- 🧹 剔除常见构建产物 / 依赖目录（`node_modules`、`dist`、`build` 等），即使没被 gitignore——可配置，见下文
+- 🧹 默认不隐藏任何东西——通过 `hiddenDirs` 选项显式声明要隐藏什么（见配置）
 - 🖱️ 右键（或 Ctrl+点击）用默认编辑器打开文件、打开文件资源管理器
 - 📁 面板可折叠，展开目录与面板状态跨重启保留
 - 🔄 文件变更自动刷新，外部编辑也能同步
@@ -25,26 +25,26 @@
 
 ## ⚙️ 配置
 
-常见构建产物 / 依赖目录即使没被 gitignore 也会被剔除。默认清单：
+目录树展示 OpenCode 文件 API 返回的一切——包括 gitignore 的文件。唯一的隐藏来自你自己声明：`hiddenDirs` 里填什么，就隐藏什么（名称精确匹配、任意层级生效）。
 
-```text
-node_modules  dist  build  out  target  __pycache__
-```
+以下几种注册方式行为完全一致——什么都不隐藏：
 
-目录名精确匹配、任意层级生效。两个可选插件选项（`~/.config/opencode/tui.json` 元组形式）都作用在默认清单之上：
+- `"opencode-dir-tree-tui"`
+- `["opencode-dir-tree-tui", { "hiddenDirs": [] }]`
+
+要隐藏条目，填入名字即可：
 
 ```json
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    ["opencode-dir-tree-tui", { "hiddenDirs": ["logs", ".cache"], "visibleDirs": ["build"] }]
+    ["opencode-dir-tree-tui", { "hiddenDirs": ["node_modules", "dist", "logs"] }]
   ]
 }
 ```
 
-- `hiddenDirs`：额外要隐藏的目录名，合并进默认清单。
-- `visibleDirs`：要重新显示的默认目录名（比如源码就叫 `build`，把它解禁）。
-- 两个都不传（或插件用纯字符串形式注册）则只保留默认清单。改完配置重启 `opencode`。
+- `hiddenDirs`：要隐藏的目录/文件名数组。改完配置后重启 `opencode`。
+- 说明：少数系统条目（如 Windows 的 `Application Data` 等 junction 链接）由 OpenCode 服务端自行过滤，不会到达插件。
 
 ## 📦 安装
 

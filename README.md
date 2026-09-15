@@ -17,7 +17,7 @@ An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tre
 
 - ↕️ Directories sort first, then files — both alphabetically
 - 🎨 Git status coloring: added (green), modified (yellow), deleted (red); non-git projects stay uncolored
-- 🧹 Hides common build/dependency directories (`node_modules`, `dist`, `build`, ...) even when not git-ignored — configurable, see below
+- 🧹 Nothing is hidden by default — you declare exactly what to hide via the `hiddenDirs` option (see Configuration)
 - 🖱️ Right-click (or Ctrl+click) opens files in your editor / directories in your file explorer
 - 📁 Collapsible panel; expanded directories and panel state persist across restarts
 - 🔄 Auto-refreshes on file changes, including edits made outside OpenCode
@@ -25,26 +25,26 @@ An [OpenCode](https://opencode.ai) TUI plugin that adds a VS Code-style file tre
 
 ## ⚙️ Configuration
 
-Common build/dependency directories are hidden even when not git-ignored. Defaults:
+The tree shows everything OpenCode's file API returns — including gitignored files. The only hiding is what you declare yourself: whatever names you put in `hiddenDirs` gets hidden (exact match, any depth).
 
-```text
-node_modules  dist  build  out  target  __pycache__
-```
+All of the following registrations behave identically — nothing is hidden:
 
-Names match exactly, at any depth. Optional plugin options (tuple form in `~/.config/opencode/tui.json`) apply on top of the defaults:
+- `"opencode-dir-tree-tui"`
+- `["opencode-dir-tree-tui", { "hiddenDirs": [] }]`
+
+To hide entries, fill in names:
 
 ```json
 {
   "$schema": "https://opencode.ai/tui.json",
   "plugin": [
-    ["opencode-dir-tree-tui", { "hiddenDirs": ["logs", ".cache"], "visibleDirs": ["build"] }]
+    ["opencode-dir-tree-tui", { "hiddenDirs": ["node_modules", "dist", "logs"] }]
   ]
 }
 ```
 
-- `hiddenDirs`: extra directory names to hide, merged into the defaults.
-- `visibleDirs`: default names to show again (e.g. un-hide `build` if you keep source there).
-- Omit both (or register the plugin as a plain string) to keep just the defaults. Restart `opencode` after changing the config.
+- `hiddenDirs`: array of directory/file names to hide. Restart `opencode` after changing the config.
+- Note: a few system entries (e.g. Windows junction links like `Application Data`) are filtered by OpenCode's server itself and never reach the plugin.
 
 ## 📦 Installation
 
