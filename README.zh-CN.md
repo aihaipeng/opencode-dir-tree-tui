@@ -1,146 +1,97 @@
-# opencode-dir-tree-tui
+# 🌳 opencode-dir-tree-tui
 
 <p align="center">
-  <a href="README.md">English</a> | 简体中文
+  <a href="README.md">English</a> | <a href="README.zh-CN.md">简体中文</a>
 </p>
+
 <p align="center">
   <a href="https://www.npmjs.com/package/opencode-dir-tree-tui"><img src="https://img.shields.io/npm/v/opencode-dir-tree-tui" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/opencode-dir-tree-tui"><img src="https://img.shields.io/npm/dm/opencode-dir-tree-tui" alt="npm downloads"></a>
+  <a href="https://www.npmjs.com/package/opencode-dir-tree-tui"><img src="https://img.shields.io/npm/dm/opencode-dir-tree-tui" alt="npm downloads per month"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
-一个 [OpenCode](https://opencode.ai) TUI 插件：在右侧边栏增加 VS Code 风格的文件树，点击展开/折叠目录，右键用系统默认程序打开，git 状态一眼可见。
+给 [**OpenCode V2**](https://opencode.ai/v2/docs/) 的侧边栏加一棵文件树。展开目录、查看 Git 变更、打开文件，在终端里就能搞定。
 
-![demo](assets/demo.gif)
+![文件树演示](assets/demo.gif)
 
-## ✨ 功能
+## ✨ 有什么好用的
 
-- ↕️ 目录排前、文件排后，各自按名称排序
-- 🎨 git 状态着色：新增（绿）、修改（黄）、删除（红）；非 git 项目不着色
-- 🧹 按需隐藏：只有 `hiddenDirs` 列出的名字才被隐藏——默认什么都不隐藏
-- 🖱️ 右键（或 Ctrl+点击）用默认编辑器打开文件、打开文件资源管理器
-- 📁 面板可折叠，展开目录与面板状态跨重启保留
-- 🔄 文件变更自动刷新，外部编辑也能同步
-- 🔔 有新版本时提醒，并给出需要删除的缓存目录
-
-## ⚙️ 配置
-
-目录树展示 OpenCode 文件 API 返回的一切——包括 gitignore 的文件。唯一的隐藏来自你自己声明：`hiddenDirs` 里填什么，就隐藏什么（名称精确匹配、任意层级生效）。
-
-参考配置（可整体复制粘贴；不写 `hiddenDirs` 或留空数组则什么都不隐藏）：
-
-```json
-{
-  "$schema": "https://opencode.ai/tui.json",
-  "plugin": [
-    ["opencode-dir-tree-tui", { "hiddenDirs": ["node_modules", "__pycache__", ".git"] }]
-  ]
-}
-```
-
-- 改完配置后重启 `opencode`。
-- 说明：少数系统条目（如 Windows 的 `Application Data` 等 junction 链接）由 OpenCode 服务端自行过滤，不会到达插件。
+- 用颜色区分文件的 Git 状态。
+- 右键或 Ctrl+点击，用系统默认程序打开文件和目录。
+- 按名称或 `*.log` 这样的通配符隐藏杂项。
+- 自动刷新，面板可以折叠，展开过的目录也会记住。
 
 ## 📦 安装
 
-这是 **TUI 插件**：必须配置在 `~/.config/opencode/tui.json`，不是 `opencode.json`。
+### 让 Agent 帮你装（推荐）
 
-### 方式一：让 AI agent 代装（推荐）
-
-把下面这段话粘贴给 OpenCode 或任意 LLM agent：
+把这段话发给 OpenCode 或你常用的编程 Agent：
 
 ```text
-按照 https://raw.githubusercontent.com/aihaipeng/opencode-dir-tree-tui/main/README.md 的说明，安装 opencode-dir-tree-tui 插件。
+帮我安装适用于 OpenCode V2 的 opencode-dir-tree-tui，按照这份 README 的「手动安装」部分配置，保留已有设置：
+https://raw.githubusercontent.com/aihaipeng/opencode-dir-tree-tui/main/README.zh-CN.md
 ```
 
-### 方式二：npm 安装
+### 手动安装
+
+把插件加进 `~/.config/opencode/cli.json`，保留已有设置：
 
 ```json
 {
-  "$schema": "https://opencode.ai/tui.json",
-  "plugin": [
-    ["opencode-dir-tree-tui", { "hiddenDirs": [] }]
+  "$schema": "https://opencode.ai/v2/cli.json",
+  "plugins": [
+    {
+      "package": "opencode-dir-tree-tui",
+      "options": {
+        "hiddenDirs": ["node_modules", "__pycache__", "*.pyc"]
+      }
+    }
   ]
 }
 ```
 
-无需手动操作——OpenCode 启动时自行拉取 npm 插件。保留已有条目，数组可装多个插件。加载页卡住见故障排查。
+OpenCode 会自动从 npm 下载，并自动重载受监控的配置改动。
 
-### 方式三：源码构建
+## 🖱️ 怎么点
+
+| 操作 | 效果 |
+| --- | --- |
+| 点击目录 | 展开 / 折叠 |
+| 右键或 Ctrl+点击文件、目录 | 用系统默认程序打开 |
+| 点击 `File Tree` | 收起 / 展开面板 |
+
+## 🧹 隐藏杂项
+
+上面配置里的 `hiddenDirs` 对**文件和目录都生效**。不写或设为 `[]`，就显示服务端返回的所有条目，包括 gitignore 忽略的文件。
+
+| 规则 | 匹配内容 |
+| --- | --- |
+| `node_modules` | 名称完全相同的条目 |
+| `*.log` | 以 `.log` 结尾的名称 |
+| `.env*` | `.env`、`.env.local` 等 |
+| `temp?` | `temp1`、`tempA` 等 |
+
+按完整名称匹配，区分大小写，任意层级都生效。`*` 表示零个或多个字符（包括开头的点），`?` 表示一个字符；其余字符按字面匹配。不支持路径模式、否定规则、字符组或读取 `.gitignore`。隐藏只影响文件树显示。
+
+## 🔧 几个小提示
+
+- **没看到文件树？** 检查 OpenCode 版本和插件配置，然后重启。需要排查加载问题时，启用 `OPENCODE_LOG_LEVEL=DEBUG`，在 `~/.local/share/opencode/log/opencode.log` 中找 `stage=setup` + `opencode-dir-tree-tui`。
+- **Ctrl+点击没反应？** 可能是终端不转发修饰键，试试右键。
+- **没有 Git 颜色？** 检查 `git` 是否可用，以及当前目录是否在 Git 仓库里。颜色会跟随主题。
+- **改动没生效？** V2 会自动重载受监控的插件和配置文件；未被监控的本地依赖可能仍需重启。
+
+## 🛠️ 开发
+
+想改插件代码？克隆仓库，再装好开发工具需要的 [Bun](https://bun.sh)：
 
 ```bash
 git clone https://github.com/aihaipeng/opencode-dir-tree-tui.git
 cd opencode-dir-tree-tui
 bun install
-bun run build
+bun run typecheck
+bun run test
 ```
 
-然后把 `dist/tui.js` 的绝对路径按方式二的样子写进 `plugin`（如 `"C:\\path\\to\\opencode-dir-tree-tui\\dist\\tui.js"`）。
+OpenCode 会直接编译 TSX，并重载受监控的文件。改动没被检测到时，再重启确认。测试覆盖树状态、通配符过滤和无界面鼠标交互。
 
-### ⬆️ 更新
-
-- **npm 安装**：重启 `opencode` 即可，启动时会重新解析版本。若仍加载旧版，删除 `~/.cache/opencode/packages/opencode-dir-tree-tui@latest/` 后再重启。
-- **本地安装**：`git pull` → `bun install && bun run build` → 重启。
-
-无热重载——安装、更新、改配置后都需重启 `opencode`。
-
-### 🤖 给 LLM Agent 的说明
-
-<details>
-<summary>AI agent 代装时按以下步骤执行</summary>
-
-1. 不要让用户安装 Bun——OpenCode 用内嵌运行时安装 npm 插件。启动卡住时运行 `opencode --print-logs` 查看依赖解析；若卡住，删除 `~/.cache/opencode/` 后重试。
-2. 编辑 `~/.config/opencode/tui.json`（不存在则创建）——TUI 插件写这里，绝不写 `opencode.json`。
-3. 将插件以 `[包名, 选项]` 元组形式加入 `plugin` 数组（纯字符串也可以），保留已有条目：
-
-   ```json
-   {
-     "$schema": "https://opencode.ai/tui.json",
-     "plugin": [["opencode-dir-tree-tui", { "hiddenDirs": [] }]]
-   }
-   ```
-
-4. 不要手动执行 `npm install` / `bun add`——OpenCode 启动时自行拉取。
-5. 重启 `opencode`（无热重载）。右侧边栏出现 `File Tree` 区块即成功。
-
-</details>
-
-## 🚀 使用
-
-| 操作 | 效果 |
-| --- | --- |
-| 点击目录 | 展开 / 折叠 |
-| 右键文件 / 目录 | 用默认编辑器打开 / 打开文件资源管理器 |
-| Ctrl+点击 文件 / 目录 | 同右键 |
-| 点击 `File Tree` 标题 | 折叠 / 展开面板 |
-
-## 🛠️ 故障排查
-
-- **TUI 卡在加载页**：多半是内嵌运行时解析依赖挂起（代理/慢网络常见）。运行 `opencode --print-logs` 观察；若卡住，删除 `~/.cache/opencode/` 后重试，或改用源码构建。
-- **没有 `File Tree` 区块**：检查 `tui.json` 路径为绝对路径且正确，然后重启。`opencode --pure` 会跳过所有外部插件，可用来定位问题。
-- **Ctrl+点击无反应**：部分终端不转发 Ctrl 修饰键，请改用右键。
-- **没有 git 着色**：项目不是 git 仓库（或 `git` 不可用），设计上保持静默。
-
-## 🧑‍💻 开发
-
-```bash
-bun install
-bun run build      # 打包到 dist/tui.js + 声明
-bun run typecheck  # tsc --noEmit
-```
-
-### 📂 源码结构
-
-```text
-src/
-├── tui.tsx                        # 插件入口：侧边栏面板、刷新接线、版本检查
-├── tree.ts                        # 树模型：懒加载、git 状态、忽略清单、排序
-└── components/
-    └── dir-tree-panel.tsx         # 面板渲染、鼠标交互、用默认程序打开
-```
-
-如果这个插件对你有帮助，欢迎点个 ⭐——能让更多人发现它。
-
-## 📄 许可证
-
-[MIT](LICENSE)
+[插件安装说明](https://opencode.ai/v2/docs/cli/plugins) · [V2 插件 API](https://opencode.ai/v2/docs/build/plugins/cli) · [MIT 许可证](LICENSE)

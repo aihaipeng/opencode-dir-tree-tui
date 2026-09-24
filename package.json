@@ -1,7 +1,7 @@
 {
   "name": "opencode-dir-tree-tui",
-  "version": "0.5.1",
-  "description": "OpenCode TUI plugin: VS Code-style file tree in the sidebar with git status coloring and click-to-open",
+  "version": "1.0.0",
+  "description": "OpenCode V2 TUI plugin: VS Code-style file tree in the sidebar with git status coloring and click-to-open",
   "license": "MIT",
   "type": "module",
   "author": "aihaipeng",
@@ -22,33 +22,34 @@
     "opentui"
   ],
   "files": [
-    "dist",
+    "src",
     "README.md",
     "README.zh-CN.md",
     "LICENSE"
   ],
   "exports": {
-    ".": {
-      "import": "./dist/tui.js",
-      "types": "./dist/tui.d.ts"
-    },
-    "./tui": {
-      "import": "./dist/tui.js",
-      "types": "./dist/tui.d.ts"
-    }
+    "./tui": "./src/tui.tsx"
+  },
+  "engines": {
+    "opencode": ">=2.0.0"
   },
   "scripts": {
-    "build": "bun run scripts/build.mjs && tsc --emitDeclarationOnly",
+    "test": "bun test --conditions=browser --preload @opentui/solid/preload",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run typecheck"
   },
   "dependencies": {
-    "@opencode-ai/plugin": "^1.18.25",
-    "@opentui/core": "^0.1.105",
-    "@opentui/solid": "^0.1.105",
-    "solid-js": "^1.9.11"
+    "@opencode/plugin": "^2.0.16"
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.5.10",
+    "@opentui/solid": ">=0.5.10",
+    "solid-js": ">=1.9.0"
   },
   "devDependencies": {
+    "@opentui/core": "^0.5.10",
+    "@opentui/solid": "^0.5.10",
+    "solid-js": "^1.9.0",
     "typescript": "^5.8.2"
   }
 }

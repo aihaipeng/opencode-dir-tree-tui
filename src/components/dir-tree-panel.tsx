@@ -1,12 +1,21 @@
 /** @jsxImportSource @opentui/solid */
 
-import { For, Show, createMemo, createSignal } from "solid-js"
+import { For, Show, createMemo } from "solid-js"
 import type { Accessor } from "solid-js"
 import { spawn } from "node:child_process"
-import type { TuiThemeCurrent } from "@opencode-ai/plugin/tui"
+import type { Plugin } from "@opencode/plugin/tui"
 import { MouseButton } from "@opentui/core"
 import type { MouseEvent, RGBA } from "@opentui/core"
 import type { GitStatus, TreeStore, TreeNode } from "../tree"
+
+/** Nested semantic tokens replaced V1's flat TuiThemeCurrent. */
+type Theme = Plugin.Context["theme"]
+
+const GIT_STATUS_COLOR: Record<GitStatus, "success" | "error" | "warning"> = {
+  added: "success",
+  deleted: "error",
+  modified: "warning",
+}
 
 /** Open a file or directory with the system default program. */
 function openPath(absolutePath: string): boolean {
@@ -26,55 +35,36 @@ function openPath(absolutePath: string): boolean {
   }
 }
 
-type ThemeColor = keyof TuiThemeCurrent
-
-const GIT_STATUS_COLOR: Record<GitStatus, ThemeColor> = {
-  added: "success",
-  deleted: "error",
-  modified: "warning",
-}
-
 interface DirTreePanelProps {
   store: TreeStore
-  theme: Accessor<TuiThemeCurrent>
+  theme: Accessor<Theme>
   collapsed: Accessor<boolean>
   onToggle: () => void
 }
 
 export function DirTreePanel(props: DirTreePanelProps) {
-  const [panelWidth, setPanelWidth] = createSignal(0)
-  let panelBox: { width: number } | undefined
-
   const rows = createMemo(() => props.store.visibleRows())
-  const expanded = (path: string) => props.store.isExpanded(path)
   const theme = () => props.theme()
-
-  const truncate = (label: string, maxWidth: number): string => {
-    if (maxWidth <= 0) return ""
-    if (label.length <= maxWidth) return label
-    const ellipsis = "..."
-    if (maxWidth <= ellipsis.length) return ellipsis.slice(0, maxWidth)
-    return `${label.slice(0, maxWidth - ellipsis.length)}${ellipsis}`
-  }
 
   /** indent + expand marker, then the name in one colored run. */
   const rowText = (node: TreeNode, depth: number): string => {
     const indent = "  ".repeat(depth)
-    const marker = node.isDir ? (expanded(node.path) ? "▾ " : "▸ ") : "  "
-    const budget = Math.max(1, panelWidth() - indent.length)
-    return indent + marker + truncate(node.name, budget - marker.length)
+    const marker = node.isDir ? (props.store.isExpanded(node.path) ? "▾ " : "▸ ") : "  "
+    return indent + marker + node.name
   }
 
   const rowColor = (node: TreeNode): RGBA => {
     const t = theme()
-    if (node.isDir) return t.secondary
+    // Directories render muted (V1 used t.secondary, which has no V2
+    // equivalent); files in the base text color, git feedback colors on top.
+    if (node.isDir) return t.text.muted
     const status = props.store.gitStatus(node)
-    return status ? (t[GIT_STATUS_COLOR[status]] as RGBA) : t.text
+    return status ? t.text.feedback[GIT_STATUS_COLOR[status]].base : t.text.base
   }
 
   const open = (node: TreeNode) => {
     if (!openPath(node.absolute)) return
-    props.store.api.ui.toast({
+    props.store.context.ui.toast.show({
       variant: "info",
       title: "Dir Tree",
       message: `Opened ${node.name}`,
@@ -87,64 +77,42 @@ export function DirTreePanel(props: DirTreePanelProps) {
     // system (and its ctrl+click select-all gesture) from consuming this.
     event.preventDefault()
 
-    if (event.button === MouseButton.RIGHT) {
-      // Right-click: open with the default app (file -> editor, dir -> file explorer).
+    if (event.button === MouseButton.RIGHT ||
+      (event.button === MouseButton.LEFT && event.modifiers?.ctrl)) {
       open(node)
-      return
-    }
-
-    if (event.button !== MouseButton.LEFT) return
-    const ctrl = event.modifiers?.ctrl ?? false
-    if (node.isDir) {
-      if (ctrl) {
-        // Ctrl+click a directory: open it in the file explorer.
-        open(node)
-        return
-      }
-      // Plain click: expand / collapse.
+    } else if (event.button === MouseButton.LEFT && node.isDir) {
       props.store.toggle(node.path)
-      return
     }
-    // Ctrl+click a file: open it with the default text editor.
-    if (ctrl) {
-      open(node)
-    }
-    // Plain click on a file: no-op.
   }
 
   const title = () => (props.collapsed() ? "▶ File Tree" : "▼ File Tree")
 
   return (
-    <box
-      ref={(element) => {
-        panelBox = element
-        setPanelWidth(element.width)
-      }}
-      onSizeChange={() => setPanelWidth(panelBox?.width ?? 0)}
-      flexDirection="column"
-    >
-      <box flexDirection="row" onMouseDown={props.onToggle}>
-        <text style={{ fg: theme().text }}>
+    <box flexDirection="column">
+      <box flexDirection="row" onMouseDown={(event) => {
+        if (event.button !== MouseButton.LEFT) return
+        event.preventDefault()
+        props.onToggle()
+      }}>
+        <text style={{ fg: theme().text.base }}>
           <strong>{title()}</strong>
         </text>
       </box>
 
       <Show when={!props.collapsed()}>
         <Show when={props.store.loadError()}>
-          {(error) => <text style={{ fg: theme().error }}>{error}</text>}
+          {(error) => <text style={{ fg: theme().text.feedback.error.base }}>{error()}</text>}
         </Show>
 
-        <Show when={rows().length > 0} fallback={<text style={{ fg: theme().textMuted }}>No files listed</text>}>
-          <For each={rows()}>
-            {(row) => (
-              <box onMouseDown={(event) => onRowMouseDown(event, row.node)} flexDirection="row">
-                <text style={{ fg: rowColor(row.node) }}>
-                  {rowText(row.node, row.depth)}
-                </text>
-              </box>
-            )}
-          </For>
-        </Show>
+        <For each={rows()} fallback={<text style={{ fg: theme().text.muted }}>No files listed</text>}>
+          {(row) => (
+            <box onMouseDown={(event) => onRowMouseDown(event, row.node)} flexDirection="row">
+              <text width="100%" wrapMode="none" truncate style={{ fg: rowColor(row.node) }}>
+                {rowText(row.node, row.depth)}
+              </text>
+            </box>
+          )}
+        </For>
       </Show>
     </box>
   )

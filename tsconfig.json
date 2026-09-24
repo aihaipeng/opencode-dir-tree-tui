@@ -6,10 +6,6 @@
     "jsx": "preserve",
     "jsxImportSource": "@opentui/solid",
     "strict": true,
-    "declaration": true,
-    "declarationMap": false,
-    "emitDeclarationOnly": false,
-    "outDir": "dist",
     "rootDir": "src",
     "skipLibCheck": true
   },
