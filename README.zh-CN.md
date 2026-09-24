@@ -10,7 +10,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
-给 [**OpenCode V2**](https://opencode.ai/v2/docs/) 的侧边栏加一棵文件树。展开目录、查看 Git 变更、打开文件，在终端里就能搞定。
+给 [**OpenCode**](https://opencode.ai) 的侧边栏加一棵文件树。展开目录、查看 Git 变更、打开文件，在终端里就能搞定。
 
 ![文件树演示](assets/demo.gif)
 
@@ -23,20 +23,35 @@
 
 ## 📦 安装
 
-不带版本号的安装面向 OpenCode V2。OpenCode V1 用户请继续使用 `opencode-dir-tree-tui@0.5.1`。
+请根据已安装的 OpenCode 版本选择下方指导。OpenCode V1 使用固定的旧版插件，V2 使用当前版本。
 
 ### 让 Agent 帮你装（推荐）
 
 把这段话发给 OpenCode 或你常用的编程 Agent：
 
 ```text
-帮我安装适用于 OpenCode V2 的 opencode-dir-tree-tui，按照这份 README 的「手动安装」部分配置，保留已有设置：
+请按照这份 README 的手动安装部分安装 opencode-dir-tree-tui。先检查我已安装的 OpenCode 版本，再选择对应指导，保留已有配置：
 https://raw.githubusercontent.com/aihaipeng/opencode-dir-tree-tui/main/README.zh-CN.md
 ```
 
 ### 手动安装
 
-把插件加进 `~/.config/opencode/cli.json`，保留已有设置：
+先检查你正在使用的 OpenCode 版本：
+
+```bash
+opencode --version
+```
+
+| OpenCode 版本 | 插件包 | 配置文件与字段 |
+| --- | --- | --- |
+| `1.x`（V1） | `opencode-dir-tree-tui@0.5.1` | `~/.config/opencode/tui.json` → `plugin` |
+| `2.x`（V2） | `opencode-dir-tree-tui` | `~/.config/opencode/cli.json` → `plugins` |
+
+如果无法确定版本，请先确认再修改配置。将对应条目合并到已有文件，保留其他插件和设置；若已配置本插件，更新原条目并保留原有选项，避免重复添加。
+
+#### OpenCode V2
+
+在 `~/.config/opencode/cli.json` 中添加以下条目：
 
 ```json
 {
@@ -53,6 +68,28 @@ https://raw.githubusercontent.com/aihaipeng/opencode-dir-tree-tui/main/README.zh
 ```
 
 OpenCode 会自动从 npm 下载，并自动重载受监控的配置改动。
+
+#### OpenCode V1
+
+在 `~/.config/opencode/tui.json` 中，将固定版本和选项放在嵌套数组里：
+
+```json
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": [
+    [
+      "opencode-dir-tree-tui@0.5.1",
+      {
+        "hiddenDirs": ["node_modules", "__pycache__", ".git"]
+      }
+    ]
+  ]
+}
+```
+
+重启 OpenCode 后会自动下载并加载插件。使用 V1 时，即使出现更新提示也请保留 `@0.5.1`，不带版本号会安装面向 V2 的版本。
+
+下方使用说明面向 V2。V1 的 `hiddenDirs` 只支持精确名称，其他功能请参考 [V1 使用说明](https://github.com/aihaipeng/opencode-dir-tree-tui/blob/v0.5.1/README.zh-CN.md)。
 
 ## 🖱️ 怎么点
 

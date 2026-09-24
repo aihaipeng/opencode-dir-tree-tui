@@ -10,7 +10,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
-A little file tree for your [**OpenCode V2**](https://opencode.ai/v2/docs/) sidebar. Expand folders, spot Git changes, and open files without leaving the terminal.
+A little file tree for your [**OpenCode**](https://opencode.ai) sidebar. Expand folders, spot Git changes, and open files without leaving the terminal.
 
 ![File tree demo](assets/demo.gif)
 
@@ -23,20 +23,35 @@ A little file tree for your [**OpenCode V2**](https://opencode.ai/v2/docs/) side
 
 ## 📦 Install
 
-Unversioned installs target OpenCode V2. OpenCode V1 users should stay on `opencode-dir-tree-tui@0.5.1`.
+Choose the instructions below for your installed OpenCode version. OpenCode V1 uses a pinned legacy release; V2 uses the current release.
 
 ### Let your Agent do it (recommended)
 
 Paste this into OpenCode or your favorite coding Agent:
 
 ```text
-Install opencode-dir-tree-tui for OpenCode V2 using the manual installation section in this README. Preserve my existing configuration:
+Install opencode-dir-tree-tui using the manual installation section in this README. Check my installed OpenCode version and follow the matching instructions. Preserve my existing configuration:
 https://raw.githubusercontent.com/aihaipeng/opencode-dir-tree-tui/main/README.md
 ```
 
 ### Manual installation
 
-Add this plugin to `~/.config/opencode/cli.json`, keeping your existing settings:
+First check the OpenCode version you use:
+
+```bash
+opencode --version
+```
+
+| OpenCode version | Plugin package | Configuration file and field |
+| --- | --- | --- |
+| `1.x` (V1) | `opencode-dir-tree-tui@0.5.1` | `~/.config/opencode/tui.json` → `plugin` |
+| `2.x` (V2) | `opencode-dir-tree-tui` | `~/.config/opencode/cli.json` → `plugins` |
+
+If the version cannot be determined, confirm it before editing the configuration. Merge the matching entry into your existing file, preserving other plugins and settings. If this plugin is already listed, update that entry and preserve its options instead of adding a duplicate.
+
+#### OpenCode V2
+
+Add the following entry to `~/.config/opencode/cli.json`:
 
 ```json
 {
@@ -53,6 +68,28 @@ Add this plugin to `~/.config/opencode/cli.json`, keeping your existing settings
 ```
 
 OpenCode handles the npm download and reloads watched configuration changes.
+
+#### OpenCode V1
+
+Add the pinned version and its options as a nested array in `~/.config/opencode/tui.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": [
+    [
+      "opencode-dir-tree-tui@0.5.1",
+      {
+        "hiddenDirs": ["node_modules", "__pycache__", ".git"]
+      }
+    ]
+  ]
+}
+```
+
+Restart OpenCode to download and load the plugin. Keep `@0.5.1` pinned while using V1, even if an update notice appears; an unversioned package selects the V2 release.
+
+The usage below describes V2. V1's `hiddenDirs` matches exact names only; see the [V1 usage guide](https://github.com/aihaipeng/opencode-dir-tree-tui/blob/v0.5.1/README.md) for its features.
 
 ## 🖱️ Click around
 
