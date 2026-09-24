@@ -23,6 +23,8 @@
 
 ## 📦 安装
 
+不带版本号的安装面向 OpenCode V2。OpenCode V1 用户请继续使用 `opencode-dir-tree-tui@0.5.1`。
+
 ### 让 Agent 帮你装（推荐）
 
 把这段话发给 OpenCode 或你常用的编程 Agent：

@@ -23,6 +23,8 @@ A little file tree for your [**OpenCode V2**](https://opencode.ai/v2/docs/) side
 
 ## 📦 Install
 
+Unversioned installs target OpenCode V2. OpenCode V1 users should stay on `opencode-dir-tree-tui@0.5.1`.
+
 ### Let your Agent do it (recommended)
 
 Paste this into OpenCode or your favorite coding Agent:
