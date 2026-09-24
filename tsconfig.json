@@ -8,5 +8,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["index.ts", "tui.tsx", "src/**/*.ts", "src/**/*.tsx"]
+  "include": ["index.ts", "src/**/*.ts", "src/**/*.tsx"]
 }

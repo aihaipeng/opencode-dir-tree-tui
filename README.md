@@ -92,8 +92,9 @@ cd opencode-dir-tree-tui
 bun install
 bun run typecheck
 bun run test
+bun run test:package
 ```
 
-OpenCode compiles the TSX directly and reloads watched files. If an edit isn't picked up, restart it to verify. Tests cover tree state, wildcard filtering and headless mouse interactions.
+Build before loading this repository as a local plugin: `bun run build`. Published packages include precompiled Solid code so OpenCode can update the tree after a click. `bun run test:package` checks the actual npm tarball from a `node_modules` path.
 
 [Plugin installation](https://opencode.ai/v2/docs/cli/plugins) · [V2 plugin API](https://opencode.ai/v2/docs/build/plugins/cli) · [MIT license](LICENSE)

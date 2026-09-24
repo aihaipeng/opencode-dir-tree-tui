@@ -5,7 +5,7 @@ import { RGBA } from "@opentui/core"
 import { testRender } from "@opentui/solid"
 import { createStore, produce } from "solid-js/store"
 import type { Plugin } from "@opencode/plugin/tui"
-import plugin from "../src/tui"
+const { default: plugin } = await import(process.env.PLUGIN_TEST_ENTRY ?? "../src/tui")
 
 test("real panel handles mouse expansion, header collapse/reopen, and cleanup", async () => {
   let render!: () => any

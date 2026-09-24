@@ -92,8 +92,9 @@ cd opencode-dir-tree-tui
 bun install
 bun run typecheck
 bun run test
+bun run test:package
 ```
 
-OpenCode 会直接编译 TSX，并重载受监控的文件。改动没被检测到时，再重启确认。测试覆盖树状态、通配符过滤和无界面鼠标交互。
+作为本地插件加载仓库前，请先运行 `bun run build`。npm 发布包包含预编译的 Solid 代码，确保点击后目录树能更新。`bun run test:package` 会从 `node_modules` 路径测试实际 npm 压缩包。
 
 [插件安装说明](https://opencode.ai/v2/docs/cli/plugins) · [V2 插件 API](https://opencode.ai/v2/docs/build/plugins/cli) · [MIT 许可证](LICENSE)

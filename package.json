@@ -1,6 +1,6 @@
 {
   "name": "opencode-dir-tree-tui",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "OpenCode V2 TUI plugin: VS Code-style file tree in the sidebar with git status coloring and click-to-open",
   "license": "MIT",
   "type": "module",
@@ -24,22 +24,24 @@
   "files": [
     "index.ts",
     "tui.tsx",
-    "src",
+    "dist",
     "README.md",
     "README.zh-CN.md",
     "LICENSE"
   ],
   "exports": {
     ".": "./index.ts",
-    "./tui": "./tui.tsx"
+    "./tui": "./dist/tui.js"
   },
   "engines": {
     "opencode": ">=2.0.0"
   },
   "scripts": {
+    "build": "bun run typecheck && bun scripts/build.ts",
     "test": "bun test --conditions=browser --preload @opentui/solid/preload",
+    "test:package": "bun run build && bun scripts/test-package.ts",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "bun run typecheck"
+    "prepack": "bun run build"
   },
   "dependencies": {
     "@opencode/plugin": "^2.0.16"
