@@ -13,7 +13,11 @@ export default Plugin.define({
   id: "opencode-dir-tree-tui",
   setup(context: Context) {
     const store = new TreeStore(context, resolveHiddenDirs(context.options))
-    const [panel, updatePanel] = context.storage.store(STORAGE_PANEL, {
+    // storage.store synchronizes across every TUI instance (per V2 docs), so
+    // collapsing in one terminal used to fold the panel in all of them.
+    // Collapse is per-terminal view state: keep it in memory, which the host
+    // scopes to this TUI (it survives plugin reloads, dies with the TUI).
+    const [panel, updatePanel] = context.storage.memory(STORAGE_PANEL, {
       initial: { collapsed: false },
     })
     const collapsed = () => panel.collapsed
@@ -44,6 +48,7 @@ export default Plugin.define({
         <DirTreePanel
           store={store}
           theme={() => context.theme}
+          themeMode={() => context.themeMode}
           collapsed={collapsed}
           onToggle={() => {
             const next = !collapsed()

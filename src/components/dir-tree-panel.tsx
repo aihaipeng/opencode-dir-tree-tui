@@ -4,17 +4,43 @@ import { For, Show, createMemo } from "solid-js"
 import type { Accessor } from "solid-js"
 import { spawn } from "node:child_process"
 import type { Plugin } from "@opencode/plugin/tui"
-import { MouseButton } from "@opentui/core"
-import type { MouseEvent, RGBA } from "@opentui/core"
+import { MouseButton, RGBA } from "@opentui/core"
+import type { MouseEvent } from "@opentui/core"
 import type { GitStatus, TreeStore, TreeNode } from "../tree"
 
 /** Nested semantic tokens replaced V1's flat TuiThemeCurrent. */
 type Theme = Plugin.Context["theme"]
+type ThemeMode = Plugin.Context["themeMode"]
 
-const GIT_STATUS_COLOR: Record<GitStatus, "success" | "error" | "warning"> = {
-  added: "success",
-  deleted: "error",
-  modified: "warning",
+/**
+ * Fixed directory blue, following the ls / file-manager convention. Same
+ * fixed-color rationale as GIT_STATUS_COLORS below: directories must stay
+ * recognizable under every theme and never collide with the green/yellow/red
+ * git states. Dark uses VS Code's classic blue, light GitHub's accent blue —
+ * mid-tone values proven readable on their backgrounds (not neon, not muddy).
+ */
+export const DIR_COLORS: Record<ThemeMode, RGBA> = {
+  dark: RGBA.fromHex("#569cd6"),
+  light: RGBA.fromHex("#0969da"),
+}
+
+/**
+ * Fixed VS Code Git status colors (added = green, modified = yellow,
+ * deleted = red), not theme feedback tokens: states must stay recognizable
+ * under every theme. Dark uses the bright VS Code family values; light the
+ * official light gitDecoration defaults.
+ */
+export const GIT_STATUS_COLORS: Record<ThemeMode, Record<GitStatus, RGBA>> = {
+  dark: {
+    added: RGBA.fromHex("#73c991"),
+    modified: RGBA.fromHex("#cca700"),
+    deleted: RGBA.fromHex("#f14c4c"),
+  },
+  light: {
+    added: RGBA.fromHex("#388138"),
+    modified: RGBA.fromHex("#895503"),
+    deleted: RGBA.fromHex("#ad0707"),
+  },
 }
 
 /** Open a file or directory with the system default program. */
@@ -38,6 +64,7 @@ function openPath(absolutePath: string): boolean {
 interface DirTreePanelProps {
   store: TreeStore
   theme: Accessor<Theme>
+  themeMode: Accessor<ThemeMode>
   collapsed: Accessor<boolean>
   onToggle: () => void
 }
@@ -55,11 +82,12 @@ export function DirTreePanel(props: DirTreePanelProps) {
 
   const rowColor = (node: TreeNode): RGBA => {
     const t = theme()
-    // Directories render muted (V1 used t.secondary, which has no V2
-    // equivalent); files in the base text color, git feedback colors on top.
-    if (node.isDir) return t.text.muted
+    // Directories use the fixed blue above (text.muted proved too dim to
+    // separate from the background); files in the base text color, fixed
+    // VS Code git colors on top.
+    if (node.isDir) return DIR_COLORS[props.themeMode()]
     const status = props.store.gitStatus(node)
-    return status ? t.text.feedback[GIT_STATUS_COLOR[status]].base : t.text.base
+    return status ? GIT_STATUS_COLORS[props.themeMode()][status] : t.text.base
   }
 
   const open = (node: TreeNode) => {
@@ -85,7 +113,7 @@ export function DirTreePanel(props: DirTreePanelProps) {
     }
   }
 
-  const title = () => (props.collapsed() ? "▶ File Tree" : "▼ File Tree")
+  const title = () => (props.collapsed() ? "▶ Dir Tree" : "▼ Dir Tree")
 
   return (
     <box flexDirection="column">

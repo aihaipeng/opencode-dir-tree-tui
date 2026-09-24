@@ -97,7 +97,7 @@ The usage below describes V2. V1's `hiddenDirs` matches exact names only; see th
 | --- | --- |
 | Click a folder | Expand / collapse |
 | Right-click or Ctrl+click a file or folder | Open with the system default app |
-| Click `File Tree` | Fold / unfold the panel |
+| Click `Dir Tree` | Fold / unfold the panel |
 
 ## 🧹 Hide the clutter
 
@@ -116,7 +116,7 @@ Rules match the whole name, at any depth, and are case-sensitive. `*` means zero
 
 - **No tree?** Check your OpenCode version and plugin configuration, then restart. For loading details, enable `OPENCODE_LOG_LEVEL=DEBUG` and look for `stage=setup` + `opencode-dir-tree-tui` in `~/.local/share/opencode/log/opencode.log`.
 - **Ctrl+click not working?** Your terminal may not send the modifier. Try right-click.
-- **No Git colors?** Check that `git` is available and you're inside a Git repo. Colors follow your theme.
+- **No Git colors?** Check that `git` is available and you're inside a Git repo. Status colors are fixed VS Code Git decoration values (green = added, yellow = modified, red = deleted) and do not follow the theme.
 - **Changes not showing up?** V2 reloads watched plugin/config files. Unwatched local dependencies may still need a restart.
 
 ## 🛠️ Development
