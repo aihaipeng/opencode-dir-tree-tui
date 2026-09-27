@@ -2,6 +2,9 @@ import { afterEach, expect, test } from "bun:test"
 import { fileURLToPath } from "node:url"
 import { tmpdir } from "node:os"
 import { randomUUID } from "node:crypto"
+import { execFileSync } from "node:child_process"
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
 import type { Plugin } from "@opencode/plugin/tui"
 import { TreeStore, parsePorcelain, resolveHiddenDirs } from "../src/tree"
 
@@ -207,4 +210,109 @@ test("a removed directory clears its descendants but keeps the root and sibling 
   setList(async () => [])
   for (const dir of ["", sibling, removed, `${removed}/child`]) await store.requestDirectory(dir)
   expect(calls.slice(before)).toEqual([removed, `${removed}/child`])
+})
+
+
+test("forced refresh during an in-flight listing fetches the latest result", async () => {
+  const { store, setList } = fixture()
+  let finish!: (entries: Entry[]) => void
+  let calls = 0
+  setList(async () => {
+    calls++
+    return calls === 1
+      ? new Promise<Entry[]>((resolve) => { finish = resolve })
+      : [{ path: "latest.ts", type: "file" }]
+  })
+  const first = store.requestDirectory("")
+  const refresh = store.requestDirectory("", true)
+  finish([{ path: "old.ts", type: "file" }])
+  await Promise.all([first, refresh])
+  expect(calls).toBe(2)
+  expect(store.visibleRows().map(({ node }) => node.name)).toEqual(["latest.ts"])
+})
+
+test("refresh only visits visible expanded folders and bounds parallel requests", async () => {
+  const names = Array.from({ length: 11 }, (_, i) => `dir-${i}`)
+  const { store, calls, setList } = fixture(tmpdir(), names)
+  let active = 0
+  let peak = 0
+  setList(async (path) => {
+    if (path === ".") return names.map((name) => ({ path: `${name}\\`, type: "directory" }))
+    active++
+    peak = Math.max(peak, active)
+    await Bun.sleep(5)
+    active--
+    return [{ path: `${path}\\file.ts`, type: "file" }]
+  })
+  await store.refreshAll()
+  expect(peak).toBeLessThanOrEqual(4)
+  expect(peak).toBeGreaterThan(1)
+  store.toggle("dir-0")
+  const before = calls.length
+  await store.refreshAll()
+  expect(calls.slice(before)).not.toContain("dir-0")
+  const reopening = calls.length
+  store.toggle("dir-0")
+  await store.requestDirectory("dir-0")
+  expect(calls.slice(reopening)).toContain("dir-0")
+})
+
+test("git discovers a new repository and colors files inside an untracked folder", { timeout: 15000 }, async () => {
+  const repo = mkdtempSync(join(tmpdir(), "dir-tree-git-test-"))
+  try {
+    const workspace = join(repo, "workspace")
+    mkdirSync(join(workspace, "fresh"), { recursive: true })
+    writeFileSync(join(workspace, "fresh", "new.ts"), "new")
+    const { store, setList } = fixture(workspace, ["fresh"])
+    setList(async (path) => path === "."
+      ? [{ path: "fresh\\", type: "directory" }]
+      : [{ path: "fresh\\new.ts", type: "file" }])
+    await store.refreshAll() // Not a Git repository yet; failed probe must not stick.
+    execFileSync("git", ["-C", repo, "init", "-q"])
+    await store.refreshAll()
+    const file = store.visibleRows().find(({ node }) => node.name === "new.ts")?.node
+    expect(file).toBeDefined()
+    expect(store.gitStatus(file!)).toBe("added")
+  } finally {
+    // mkdtempSync creates this exact, explicitly named directory under tmpdir.
+    if (repo.startsWith(join(tmpdir(), "dir-tree-git-test-"))) rmSync(repo, { recursive: true, force: true })
+  }
+})
+
+
+test("overlapping full refreshes coalesce into one follow-up pass", async () => {
+  const { store, calls, setList } = fixture()
+  let finish!: (entries: Entry[]) => void
+  let active = 0
+  let peak = 0
+  setList(async () => {
+    active++
+    peak = Math.max(peak, active)
+    const result: Entry[] = calls.length === 1
+      ? await new Promise((resolve) => { finish = resolve })
+      : [{ path: "latest.ts", type: "file" }]
+    active--
+    return result
+  })
+  const first = store.refreshAll()
+  // The walk starts on the next microtask, so wait until its list begins.
+  await Promise.resolve()
+  const second = store.refreshAll()
+  finish([{ path: "old.ts", type: "file" }])
+  await Promise.all([first, second])
+  expect(calls).toEqual([".", "."])
+  expect(peak).toBe(1)
+  expect(store.visibleRows().map(({ node }) => node.name)).toEqual(["latest.ts"])
+})
+
+
+test("a remote directory listing error does not mistake the folder for locally deleted", async () => {
+  const remote = join(tmpdir(), `nonexistent-remote-${randomUUID()}`)
+  const { store, setList } = fixture(remote, ["src"])
+  await store.requestDirectory("")
+  await store.requestDirectory("src")
+  setList(async () => { throw new Error("remote unavailable") })
+  await store.requestDirectory("src", true)
+  expect(store.isExpanded("src")).toBe(true)
+  expect(store.loadError()).toContain("remote unavailable")
 })

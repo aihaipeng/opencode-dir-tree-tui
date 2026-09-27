@@ -99,6 +99,8 @@ The usage below describes V2. V1's `hiddenDirs` matches exact names only; see th
 | Right-click or Ctrl+click a file or folder | Open with the system default app |
 | Click `Dir Tree` | Fold / unfold the panel |
 
+Git coloring and opening with the system default app run on the **TUI machine**. For a remote workspace, its path must also be locally accessible; otherwise the tree can still list files, but those two actions may not work.
+
 ## 🧹 Hide the clutter
 
 `hiddenDirs` in the config above works for **both files and folders**. Leave it out or use `[]` to show everything the server returns, including gitignored files.

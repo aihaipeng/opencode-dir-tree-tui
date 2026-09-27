@@ -1,7 +1,8 @@
 /** @jsxImportSource @opentui/solid */
 import { expect, test } from "bun:test"
 import { tmpdir } from "node:os"
-import { RGBA } from "@opentui/core"
+import { join } from "node:path"
+import { MouseButton, RGBA } from "@opentui/core"
 import { testRender } from "@opentui/solid"
 import { createStore, produce } from "solid-js/store"
 import type { Plugin } from "@opencode/plugin/tui"
@@ -37,7 +38,7 @@ test("directory color is a fixed mid-tone blue for both theme modes", () => {
   expect(DIR_COLORS.light.hex).toBe(RGBA.fromHex("#0969da").hex)
 })
 
-test("real panel handles mouse expansion, header collapse/reopen, and cleanup", async () => {
+test("real panel handles mouse expansion, header collapse/reopen, and cleanup", { timeout: 15000 }, async () => {
   let render!: () => any
   let unregistered = false
   let calls = 0
@@ -98,6 +99,21 @@ test("real panel handles mouse expansion, header collapse/reopen, and cleanup", 
     expect(narrow).not.toContain("�")
     view.resize(80, 20)
     await view.waitForFrame((frame) => frame.includes(longName))
+    // A missing local opener must report failure, not "Opened". Restore the
+    // environment before the Git and package tests run.
+    const openerVariable = process.platform === "win32" ? "ComSpec" : "PATH"
+    const oldOpener = process.env[openerVariable]
+    process.env[openerVariable] = process.platform === "win32"
+      ? join(tmpdir(), "missing-dir-tree-opener.exe") : ""
+    try {
+      await view.mockMouse.click(2, 2, MouseButton.RIGHT)
+      for (let i = 0; i < 20 && toastMessages.length === 0; i++) await Bun.sleep(10)
+      expect(toastMessages[0]).toContain("Could not open")
+    } finally {
+      if (oldOpener === undefined) delete process.env[openerVariable]
+      else process.env[openerVariable] = oldOpener
+      toastMessages.length = 0
+    }
     await view.mockMouse.click(2, 1)
     await view.waitForFrame((frame) => frame.includes("index.ts"))
     expect(view.captureCharFrame()).toContain("▾ src")
@@ -106,7 +122,9 @@ test("real panel handles mouse expansion, header collapse/reopen, and cleanup", 
     const cachedCalls = calls
     await view.mockMouse.click(2, 1)
     await view.waitForFrame((frame) => frame.includes("index.ts"))
-    expect(calls).toBe(cachedCalls)
+    // Cached rows appear immediately; reopening also revalidates the folder.
+    await Bun.sleep(20)
+    expect(calls).toBeGreaterThan(cachedCalls)
 
     await view.mockMouse.click(2, 0)
     await view.waitForFrame((frame) => frame.includes("▶ Dir Tree"))

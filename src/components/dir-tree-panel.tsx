@@ -43,22 +43,24 @@ export const GIT_STATUS_COLORS: Record<ThemeMode, Record<GitStatus, RGBA>> = {
   },
 }
 
-/** Open a file or directory with the system default program. */
-function openPath(absolutePath: string): boolean {
+/** Resolve when the launcher starts, or reject if it cannot be spawned. */
+function openPath(absolutePath: string): Promise<void> {
   const cmd =
     process.platform === "win32"
       ? [process.env.ComSpec ?? "cmd.exe", "/c", "start", "", absolutePath.replaceAll("/", "\\")]
       : [process.platform === "darwin" ? "open" : "xdg-open", absolutePath]
-  try {
-    const child = spawn(cmd[0]!, cmd.slice(1), { detached: true, stdio: "ignore" })
-    // A missing opener (e.g. no xdg-open) emits 'error' async; without a
-    // listener that would crash the TUI.
-    child.on("error", () => {})
-    child.unref()
-    return true
-  } catch {
-    return false
-  }
+  return new Promise((resolve, reject) => {
+    try {
+      const child = spawn(cmd[0]!, cmd.slice(1), { detached: true, stdio: "ignore" })
+      child.once("error", reject)
+      child.once("spawn", () => {
+        child.unref()
+        resolve()
+      })
+    } catch (error) {
+      reject(error)
+    }
+  })
 }
 
 interface DirTreePanelProps {
@@ -91,13 +93,20 @@ export function DirTreePanel(props: DirTreePanelProps) {
   }
 
   const open = (node: TreeNode) => {
-    if (!openPath(node.absolute)) return
-    props.store.context.ui.toast.show({
-      variant: "info",
-      title: "Dir Tree",
-      message: `Opened ${node.name}`,
-      duration: 1500,
-    })
+    void openPath(node.absolute).then(
+      () => props.store.context.ui.toast.show({
+        variant: "info",
+        title: "Dir Tree",
+        message: `Launched ${node.name}`,
+        duration: 1500,
+      }),
+      (error: unknown) => props.store.context.ui.toast.show({
+        variant: "error",
+        title: "Dir Tree",
+        message: `Could not open ${node.name}: ${error instanceof Error ? error.message : String(error)}`,
+        duration: 5000,
+      }),
+    )
   }
 
   const onRowMouseDown = (event: MouseEvent, node: TreeNode) => {

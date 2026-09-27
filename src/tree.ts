@@ -8,6 +8,7 @@ type Context = Plugin.Context
 
 const ROOT = ""
 const STORAGE_EXPANDED = "dir-tree.expanded"
+const MAX_REFRESH_CONCURRENCY = 4
 const exec = promisify(execFile)
 
 interface TreeState {
@@ -137,16 +138,18 @@ export class TreeStore {
   private readonly hiddenDirs: ReadonlySet<string>
   private readonly hiddenPatterns: string[][]
   private map = new Map<string, TreeNode[]>()
-  private loading = new Set<string>()
+  private loading = new Map<string, Promise<void>>()
+  private pendingRefresh = new Set<string>()
   private expandedSet = new Set<string>([ROOT])
   private gitStatuses = new Map<string, GitStatus>()
-  // single root probe cached until the workspace switches; late
-  // `git init` in the root (or nested repos) won't get colors — restore
-  // per-directory probing if nested repos ever need colors
-  private repoRootCache: { dir: string; root: string | null } | undefined
+  // Cache successful root probes only; a later git init should be discovered.
+  // Nested repositories still use the workspace repository status.
+  private repoRootCache: { dir: string; root: string; prefix: string } | undefined
   private readonly state: TreeState
   private readonly updateState: (mutation: (draft: TreeState) => void) => void
   private refreshTimer: ReturnType<typeof setTimeout> | undefined
+  private refreshTask: Promise<void> | undefined
+  private refreshAgain = false
   private updateExpanded: (mutation: (draft: { dirs: string[] }) => void) => Promise<void>
   private activeDirectory: string | undefined
   private generation = 0
@@ -197,7 +200,8 @@ export class TreeStore {
       this.expandedSet.delete(key)
     } else {
       this.expandedSet.add(key)
-      void this.requestDirectory(key)
+      // Show cached rows immediately, then revalidate after a folded period.
+      void this.requestDirectory(key, this.map.has(key))
     }
     this.persistExpanded()
     this.bump()
@@ -215,21 +219,27 @@ export class TreeStore {
     const generation = this.generation
 
     try {
-      const root = this.repoRootCache?.dir === directory
-        ? this.repoRootCache.root
-        : await git(directory, "rev-parse", "--show-toplevel").then(
-          (out) => out.trim().replaceAll("\\", "/") || null,
-          () => null,
+      const probe = this.repoRootCache?.dir === directory
+        ? this.repoRootCache
+        : await git(directory, "rev-parse", "--show-toplevel", "--show-prefix").then(
+          (out) => {
+            const [root, prefix = ""] = out.replaceAll("\\", "/").split(/\r?\n/)
+            return root ? { dir: directory, root, prefix: normalizePath(prefix) } : undefined
+          },
+          () => undefined,
         )
       if (generation !== this.generation || this.directory !== directory) return
-      this.repoRootCache = { dir: directory, root }
-      if (!root) return
+      if (!probe) return // Retry on the next refresh: git init can happen later.
+      this.repoRootCache = probe
       const next = new Map<string, GitStatus>()
-      for (const item of parsePorcelain(await git(root, "status", "--porcelain", "-z"))) {
-        const absolute = isAbsolute(item.path)
-          ? item.path
-          : joinPath(root, item.path)
-        next.set(absolute.replaceAll("\\", "/"), item.status)
+      // Porcelain paths are repository-root-relative. Use Git's own prefix
+      // instead of comparing absolute paths: Git may expand Windows 8.3
+      // aliases or symlinks that the file API retains in location.directory.
+      for (const item of parsePorcelain(await git(directory, "status", "--porcelain", "-z", "--untracked-files=all", "--", "."))) {
+        const path = normalizePath(item.path)
+        const local = probe.prefix === "" ? path
+          : path.startsWith(`${probe.prefix}/`) ? path.slice(probe.prefix.length + 1) : undefined
+        if (local !== undefined) next.set(joinPath(directory, local).replaceAll("\\", "/"), item.status)
       }
       if (generation !== this.generation || this.directory !== directory) return
       this.gitStatuses = next
@@ -264,39 +274,55 @@ export class TreeStore {
       this.generation++
       this.map.clear()
       this.loading.clear()
+      this.pendingRefresh.clear()
       this.gitStatuses.clear()
       this.repoRootCache = undefined
       this.setLoadError(undefined)
       this.bump()
       this.updateState((draft) => { draft.gitVersion++ })
     }
-    if (this.loading.has(key) || (!force && this.map.has(key))) return
+    const inFlight = this.loading.get(key)
+    if (inFlight) {
+      // A filesystem event during a request must not be lost. Coalesce all
+      // forced refreshes into one follow-up request after the current one.
+      if (force) this.pendingRefresh.add(key)
+      await inFlight
+      await this.loading.get(key)
+      return
+    }
+    if (!force && this.map.has(key)) return
     const generation = this.generation
 
-    this.loading.add(key)
-    try {
-      const result = await this.context.client.file.list({
-        location: { directory },
-        path: key === ROOT ? "." : key,
-      })
-      if (generation !== this.generation || this.directory !== directory) return
+    const task = (async () => {
+      try {
+        const result = await this.context.client.file.list({
+          location: { directory },
+          path: key === ROOT ? "." : key,
+        })
+        if (generation !== this.generation || this.directory !== directory) return
 
-      if (result.data === undefined) throw new Error("response contained no data")
+        if (result.data === undefined) throw new Error("response contained no data")
 
-      this.map.set(
-        key,
-        result.data
-          .map((entry) => toNode(entry, directory))
-          .filter((node) => !this.isHidden(node.name))
-          .sort(compareNodes),
-      )
-      this.setLoadError(undefined)
-      this.bump()
-    } catch (error) {
-      if (generation === this.generation && this.directory === directory) this.handleFailure(key, error)
-    } finally {
-      if (generation === this.generation) this.loading.delete(key)
-    }
+        this.map.set(
+          key,
+          result.data
+            .map((entry) => toNode(entry, directory))
+            .filter((node) => !this.isHidden(node.name))
+            .sort(compareNodes),
+        )
+        this.setLoadError(undefined)
+        this.bump()
+      } catch (error) {
+        if (generation === this.generation && this.directory === directory) this.handleFailure(key, error)
+      } finally {
+        if (generation === this.generation) {
+          this.loading.delete(key)
+          if (this.pendingRefresh.delete(key) && !this.disposed) void this.requestDirectory(key, true)
+        }
+      }
+    })()
+    this.loading.set(key, task)
+    await task
   }
 
   private handleFailure(key: string, error: unknown): void {
@@ -308,7 +334,7 @@ export class TreeStore {
       return
     }
     const directory = this.directory
-    if (key !== ROOT && directory && !existsSync(joinPath(directory, key))) {
+    if (key !== ROOT && directory && existsSync(directory) && !existsSync(joinPath(directory, key))) {
       // Directory no longer exists: drop it and its expanded subtree
       // silently. The next listing of the parent removes the row.
       this.removeDirectory(key)
@@ -347,18 +373,60 @@ export class TreeStore {
   dispose(): void {
     this.disposed = true
     this.generation++
+    this.loading.clear()
+    this.pendingRefresh.clear()
     if (this.refreshTimer) clearTimeout(this.refreshTimer)
     this.refreshTimer = undefined
   }
 
-  async refreshAll(): Promise<void> {
-    // Re-fetch in place (no map.clear) so rows swap atomically on success
-    // instead of blanking out for a frame.
-    if (this.disposed || !this.directory) return
-    const dirs = new Set([ROOT, ...this.expandedSet,
-      ...(this.activeDirectory === this.directory ? this.map.keys() : []),
-    ])
-    await Promise.all([...dirs].map((dir) => this.requestDirectory(dir, true)))
+  refreshAll(): Promise<void> {
+    if (this.refreshTask) {
+      this.refreshAgain = true
+      return this.refreshTask
+    }
+    // Coalesce overlapping events/polls. Only one walk (and Git process)
+    // runs at once; a change during it gets one additional pass.
+    const task = Promise.resolve().then(async () => {
+      try {
+        do {
+          this.refreshAgain = false
+          await this.refreshVisible()
+        } while (this.refreshAgain && !this.disposed)
+      } finally {
+        this.refreshTask = undefined
+      }
+    })
+    this.refreshTask = task
+    return task
+  }
+
+  private async refreshVisible(): Promise<void> {
+    // Refresh only the visible expanded tree. Cached but folded directories
+    // stay available for instant reopening without being polled forever.
+    const directory = this.directory
+    if (this.disposed || !directory) return
+    await this.requestDirectory(ROOT, true)
+    if (this.disposed || this.directory !== directory) return
+
+    let frontier = [ROOT]
+    const seen = new Set(frontier)
+    while (frontier.length) {
+      const next: string[] = []
+      for (const parent of frontier) {
+        for (const node of this.map.get(parent) ?? []) {
+          if (!node.isDir || !this.expandedSet.has(node.path) || seen.has(node.path)) continue
+          seen.add(node.path)
+          next.push(node.path)
+        }
+      }
+      for (let i = 0; i < next.length; i += MAX_REFRESH_CONCURRENCY) {
+        if (this.disposed || this.directory !== directory) return
+        await Promise.all(next.slice(i, i + MAX_REFRESH_CONCURRENCY)
+          .map((dir) => this.requestDirectory(dir, true)))
+      }
+      frontier = next
+    }
+    if (this.disposed || this.directory !== directory) return
     await this.fetchGitStatuses()
   }
 
