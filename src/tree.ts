@@ -144,7 +144,7 @@ export class TreeStore {
   private gitStatuses = new Map<string, GitStatus>()
   // Cache successful root probes only; a later git init should be discovered.
   // Nested repositories still use the workspace repository status.
-  private repoRootCache: { dir: string; root: string; prefix: string } | undefined
+  private repoRootCache: { dir: string; prefix: string } | undefined
   private readonly state: TreeState
   private readonly updateState: (mutation: (draft: TreeState) => void) => void
   private refreshTimer: ReturnType<typeof setTimeout> | undefined
@@ -224,7 +224,7 @@ export class TreeStore {
         : await git(directory, "rev-parse", "--show-toplevel", "--show-prefix").then(
           (out) => {
             const [root, prefix = ""] = out.replaceAll("\\", "/").split(/\r?\n/)
-            return root ? { dir: directory, root, prefix: normalizePath(prefix) } : undefined
+            return root ? { dir: directory, prefix: normalizePath(prefix) } : undefined
           },
           () => undefined,
         )

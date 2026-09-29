@@ -73,7 +73,6 @@ interface DirTreePanelProps {
 
 export function DirTreePanel(props: DirTreePanelProps) {
   const rows = createMemo(() => props.store.visibleRows())
-  const theme = () => props.theme()
 
   /** indent + expand marker, then the name in one colored run. */
   const rowText = (node: TreeNode, depth: number): string => {
@@ -83,13 +82,12 @@ export function DirTreePanel(props: DirTreePanelProps) {
   }
 
   const rowColor = (node: TreeNode): RGBA => {
-    const t = theme()
     // Directories use the fixed blue above (text.muted proved too dim to
     // separate from the background); files in the base text color, fixed
     // VS Code git colors on top.
     if (node.isDir) return DIR_COLORS[props.themeMode()]
     const status = props.store.gitStatus(node)
-    return status ? GIT_STATUS_COLORS[props.themeMode()][status] : t.text.base
+    return status ? GIT_STATUS_COLORS[props.themeMode()][status] : props.theme().text.base
   }
 
   const open = (node: TreeNode) => {
@@ -131,17 +129,17 @@ export function DirTreePanel(props: DirTreePanelProps) {
         event.preventDefault()
         props.onToggle()
       }}>
-        <text style={{ fg: theme().text.base }}>
+        <text style={{ fg: props.theme().text.base }}>
           <strong>{title()}</strong>
         </text>
       </box>
 
       <Show when={!props.collapsed()}>
         <Show when={props.store.loadError()}>
-          {(error) => <text style={{ fg: theme().text.feedback.error.base }}>{error()}</text>}
+          {(error) => <text style={{ fg: props.theme().text.feedback.error.base }}>{error()}</text>}
         </Show>
 
-        <For each={rows()} fallback={<text style={{ fg: theme().text.muted }}>No files listed</text>}>
+        <For each={rows()} fallback={<text style={{ fg: props.theme().text.muted }}>No files listed</text>}>
           {(row) => (
             <box onMouseDown={(event) => onRowMouseDown(event, row.node)} flexDirection="row">
               <text width="100%" wrapMode="none" truncate style={{ fg: rowColor(row.node) }}>
