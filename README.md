@@ -60,7 +60,7 @@ Add the following entry to `~/.config/opencode/cli.json`:
     {
       "package": "opencode-dir-tree-tui",
       "options": {
-        "hiddenDirs": ["node_modules", "__pycache__", "*.pyc"]
+        "hiddenDirs": ["node_modules", "__pycache__"]
       }
     }
   ]
@@ -80,7 +80,7 @@ Add the pinned version and its options as a nested array in `~/.config/opencode/
     [
       "opencode-dir-tree-tui@0.5.1",
       {
-        "hiddenDirs": ["node_modules", "__pycache__", ".git"]
+        "hiddenDirs": ["node_modules", "__pycache__"]
       }
     ]
   ]
